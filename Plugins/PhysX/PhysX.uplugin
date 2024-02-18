@@ -1,0 +1,29 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "5.0.3",
+	"FriendlyName": "PhysX module",
+	"Description": "PhysX module",
+	"Category": "Physics",
+	"CreatedBy": "JW",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"SupportURL": "",
+	"EngineVersion": "5.3.0",
+	"EnabledByDefault": true,
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "PhysX",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"GameplayTasks"
+			]
+		}
+	]
+}

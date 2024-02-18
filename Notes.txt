@@ -1,0 +1,17 @@
+physx
+https://forums.unrealengine.com/t/solved-load-dlls-in-plugins/392953
+
+
+ChaosEngineInterface.h
+*contains definitions that conflict with physx
+// Temp interface
+namespace physx
+{
+	class PxActor;
+	class PxScene;
+	class PxSimulationEventCallback;
+	class PxGeometry;
+//    	class PxTransform;
+//    	class PxQuat;
+	class PxMassProperties;
+}
