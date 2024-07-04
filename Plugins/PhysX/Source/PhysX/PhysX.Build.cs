@@ -24,20 +24,26 @@ public class PhysX : ModuleRules
 			PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "include"));
 
 			// Add any import libraries or static libraries
+			
+			PublicDelayLoadDLLs.Add(Path.Combine(ModuleDirectory, "dll", "PhysX_64.dll"));
+			PublicDelayLoadDLLs.Add(Path.Combine(ModuleDirectory, "dll", "PhysXCommon_64.dll"));
+			PublicDelayLoadDLLs.Add(Path.Combine(ModuleDirectory, "dll", "PhysXFoundation_64.dll"));
+			//PublicDelayLoadDLLs.Add(Path.Combine(ModuleDirectory, "dll", "PhysXExtensions_static_64.dll"));
 			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "lib", "PhysX_64.lib"));
 			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "lib", "PhysXCommon_64.lib"));
 			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "lib", "PhysXFoundation_64.lib"));
+			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "lib", "PhysXExtensions_static_64.lib"));
 
 			//PublicDelayLoadDLLs.Add("foo.dll")
 		}
-/*
-		PrivateIncludePaths.AddRange(
-			new string[] {
-				Path.Combine(ModuleDirectory, "Private"),
-				
-				// ... add other private include paths required here ...
-			}
-		);
-*/
+		/*
+				PrivateIncludePaths.AddRange(
+					new string[] {
+						Path.Combine(ModuleDirectory, "Private"),
+
+						// ... add other private include paths required here ...
+					}
+				);
+		*/
 	}
 }

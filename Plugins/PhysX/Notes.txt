@@ -1,0 +1,7 @@
+To build PhysX libs:
+install cmake-3.30.0-rc4-windows-x86_64
+generate projects for vc 17
+change all PhysX SDK sub projects to 
+	Configuration Properties -> c++ -> Code Generation to /MD
+				 -> General -> Configuration Type to Static Library
+				*except PhysXFoundation, keep as DLL
