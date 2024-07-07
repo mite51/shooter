@@ -5,16 +5,16 @@
 #include "Components/ActorComponent.h"
 #include "PhysXPublic.h"
 #include "PxRigidBody.h"
-#include "PhysXRigidBodyComponent.generated.h"
+#include "PhysXRigidBody.generated.h"
 
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-class PHYSX_API UPhysXRigidBodyComponent : public UActorComponent
+class PHYSX_API UPhysXRigidBody : public UActorComponent
 {
     GENERATED_BODY()
 
 public:
-    UPhysXRigidBodyComponent();
+    UPhysXRigidBody();
 
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;

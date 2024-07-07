@@ -1,6 +1,6 @@
-#include "PhysXRigidBodyComponent.h"
+#include "PhysXRigidBody.h"
 
-UPhysXRigidBodyComponent::UPhysXRigidBodyComponent()
+UPhysXRigidBody::UPhysXRigidBody()
 {
     PrimaryComponentTick.bCanEverTick = true;
     RigidBody = nullptr;
@@ -17,21 +17,21 @@ UPhysXRigidBodyComponent::UPhysXRigidBodyComponent()
     AngularVelocity = FVector::ZeroVector;
 }
 
-void UPhysXRigidBodyComponent::BeginPlay()
+void UPhysXRigidBody::BeginPlay()
 {
     Super::BeginPlay();
     InitializePhysXSDK();
     CreateRigidBody();
 }
 
-void UPhysXRigidBodyComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+void UPhysXRigidBody::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     DestroyRigidBody();
     CleanupPhysXSDK();
     Super::EndPlay(EndPlayReason);
 }
 
-void UPhysXRigidBodyComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UPhysXRigidBody::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
     SyncFromPhysX();
@@ -46,7 +46,7 @@ void UPhysXRigidBodyComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
     }
 }
 
-void UPhysXRigidBodyComponent::CreateRigidBody()
+void UPhysXRigidBody::CreateRigidBody()
 {
     if (PhysXSDK && !RigidBody)
     {
@@ -56,7 +56,7 @@ void UPhysXRigidBodyComponent::CreateRigidBody()
     }
 }
 
-void UPhysXRigidBodyComponent::DestroyRigidBody()
+void UPhysXRigidBody::DestroyRigidBody()
 {
     if (RigidBody)
     {
@@ -65,7 +65,7 @@ void UPhysXRigidBodyComponent::DestroyRigidBody()
     }
 }
 
-void UPhysXRigidBodyComponent::SyncToPhysX()
+void UPhysXRigidBody::SyncToPhysX()
 {
     if (RigidBody)
     {
@@ -89,7 +89,7 @@ void UPhysXRigidBodyComponent::SyncToPhysX()
     }
 }
 
-void UPhysXRigidBodyComponent::SyncFromPhysX()
+void UPhysXRigidBody::SyncFromPhysX()
 {
     if (RigidBody)
     {
@@ -117,7 +117,7 @@ void UPhysXRigidBodyComponent::SyncFromPhysX()
     }
 }
 
-void UPhysXRigidBodyComponent::AddForce(const FVector& Force, bool bAutoWake)
+void UPhysXRigidBody::AddForce(const FVector& Force, bool bAutoWake)
 {
     if (RigidBody)
     {
@@ -125,7 +125,7 @@ void UPhysXRigidBodyComponent::AddForce(const FVector& Force, bool bAutoWake)
     }
 }
 
-void UPhysXRigidBodyComponent::AddTorque(const FVector& Torque, bool bAutoWake)
+void UPhysXRigidBody::AddTorque(const FVector& Torque, bool bAutoWake)
 {
     if (RigidBody)
     {
@@ -133,7 +133,7 @@ void UPhysXRigidBodyComponent::AddTorque(const FVector& Torque, bool bAutoWake)
     }
 }
 
-void UPhysXRigidBodyComponent::InitializePhysXSDK()
+void UPhysXRigidBody::InitializePhysXSDK()
 {
     // Note: This is a simplified initialization. In a real project, you'd want to handle this at the game level.
 //    physx::PxDefaultAllocator Allocator;
@@ -141,7 +141,7 @@ void UPhysXRigidBodyComponent::InitializePhysXSDK()
 //    PhysXSDK = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, physx::PxTolerancesScale());
 }
 
-void UPhysXRigidBodyComponent::CleanupPhysXSDK()
+void UPhysXRigidBody::CleanupPhysXSDK()
 {
     if (PhysXSDK)
     {

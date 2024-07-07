@@ -4,7 +4,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "PhysXPublic.h"
-#include "UPhysXScene.generated.h"
+#include "PhysXScene.generated.h"
 
 // Enum definitions (place these outside the class definition)
 UENUM(BlueprintType)

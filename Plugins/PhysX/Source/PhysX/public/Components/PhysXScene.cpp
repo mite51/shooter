@@ -1,4 +1,4 @@
-#include "UPhysXScene.h"
+#include "PhysXScene.h"
 
 
 #include "../../include/PxPhysicsAPI.h"
