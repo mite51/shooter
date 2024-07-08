@@ -2,10 +2,60 @@
 
 
 #include "../../include/PxPhysicsAPI.h"
+#include "BasePhysXCollider.h"
+#include "PhysXRigidBody.h"
+#include "Kismet/GameplayStatics.h"
 
 using namespace physx;
-static PxDefaultErrorCallback	gErrorCallback;
-static PxDefaultAllocator		gAllocator;
+
+
+#include "foundation/PxErrorCallback.h"
+#include "PxPhysXConfig.h"
+class PxDefaultErrorCallback : public PxErrorCallback
+{
+public:
+    PxDefaultErrorCallback() {};
+    virtual	~PxDefaultErrorCallback() {};
+
+    virtual void reportError(PxErrorCode::Enum code, const char* message, const char* file, int line) PX_OVERRIDE 
+    {
+        UE_LOG(LogTemp, Error, TEXT("PxErrorCallback %d %S %S %d"), (int)code, message, file, line);
+    };
+};
+
+#include "foundation/PxAllocatorCallback.h"
+#include "foundation/PxAssert.h"
+#include "foundation/PxMemory.h"
+#include "common/PxPhysXCommonConfig.h"
+#if PX_WINDOWS_FAMILY || PX_LINUX_FAMILY || PX_SWITCH
+#include <malloc.h>
+#endif
+class PxDefaultAllocator : public PxAllocatorCallback
+{
+public:
+    virtual void* allocate(size_t size, const char*, const char*, int)
+    {
+        //UE_LOG(LogTemp, Error, TEXT("PxDefaultAllocator %d"), (int)size );
+        void* ptr = platformAlignedAlloc(size);
+        PX_ASSERT((size_t(ptr) & 15) == 0);
+#if PX_STOMP_ALLOCATED_MEMORY
+        if (ptr != NULL)
+        {
+            PxMemSet(ptr, PxI32(0xcd), PxU32(size));
+        }
+#endif
+        return ptr;
+    }
+
+    virtual void deallocate(void* ptr)
+    {
+        platformAlignedFree(ptr);
+    }
+};
+
+
+static ::PxDefaultErrorCallback	gErrorCallback;
+static ::PxDefaultAllocator		gAllocator;
 
 UPhysXScene::UPhysXScene()
 {
@@ -72,7 +122,10 @@ void UPhysXScene::BeginPlay()
 void UPhysXScene::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-    StepPhysXSimulation(DeltaTime);
+    if (bAutoStepSimulation)
+    {
+        StepPhysXSimulation(DeltaTime);
+    }
 }
 
 void UPhysXScene::StepPhysXSimulation(float DeltaTime)
@@ -81,11 +134,17 @@ void UPhysXScene::StepPhysXSimulation(float DeltaTime)
     {
         mScene->simulate(DeltaTime);
         mScene->fetchResults(true);
+        SyncPhysXTransforms();
     }
 }
 
 void UPhysXScene::InitializePhysXSimulation()
 {
+    //FPlatformProcess::GetDllHandle(L"PhysX_64.dll");
+    //FPlatformProcess::GetDllHandle(L"PhysXCommon_64.dll");
+    //FPlatformProcess::GetDllHandle(L"PhysXCooking_64.dll");
+    //FPlatformProcess::GetDllHandle(L"PhysXFoundation_64.dll");
+
     mFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
     if (!mFoundation)
     {
@@ -109,6 +168,68 @@ void UPhysXScene::InitializePhysXSimulation()
     }
 
     // Additional setup code here...
+    UWorld* World = GetWorld();
+    if (!World || !mPhysics || !mScene)
+    {
+        UE_LOG(LogTemp, Error, TEXT("PhysX or World not initialized in UPhysXScene::InitializePhysXActors"));
+        return;
+    }
+
+    // Clear the existing array of PhysX actors
+    PhysXActors.Empty();
+
+    TArray<AActor*> FoundActors;
+    UGameplayStatics::GetAllActorsOfClass(World, AActor::StaticClass(), FoundActors);
+
+    // Find all actors with UPhysXRigidBody component
+    for (AActor* Actor : FoundActors)
+    {
+        UPhysXRigidBody* RigidBodyComponent = Actor->FindComponentByClass<UPhysXRigidBody>();
+
+        if (RigidBodyComponent)
+        {
+            // Create the PhysX rigid body
+            RigidBodyComponent->CreateRigidBody(mPhysics);
+
+            // Find and initialize all colliders
+            TArray<UBasePhysXCollider*> Colliders;
+            Actor->GetComponents<UBasePhysXCollider>(Colliders);
+
+            for (UBasePhysXCollider* Collider : Colliders)
+            {
+                Collider->InitializeCollider(mPhysics, RigidBodyComponent->RigidBody);
+            }
+
+            // Add the actor to our PhysX actors array
+            PhysXActors.Add(Actor);
+
+            // Add the rigid body to the PhysX scene
+            mScene->addActor(*RigidBodyComponent->RigidBody);
+        }
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("Initialized %d PhysX scene"), PhysXActors.Num());
+}
+
+void UPhysXScene::SyncPhysXTransforms()
+{
+    if (!mScene)
+    {
+        UE_LOG(LogTemp, Error, TEXT("PhysX scene not initialized in UPhysXScene::SyncPhysXTransforms"));
+        return;
+    }
+
+    for (AActor* Actor : PhysXActors)
+    {
+        if (Actor)
+        {
+            UPhysXRigidBody* RigidBodyComponent = Actor->FindComponentByClass<UPhysXRigidBody>();
+            if (RigidBodyComponent)
+            {
+                RigidBodyComponent->SyncTransformFromPhysX();
+            }
+        }
+    }
 }
 
 constexpr uint32 FlagToShift(physx::PxSceneFlag::Enum flag)

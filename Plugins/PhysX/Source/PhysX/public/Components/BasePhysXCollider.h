@@ -10,6 +10,8 @@ class PHYSX_API UBasePhysXCollider : public UActorComponent
 {
     GENERATED_BODY()
 
+    friend class UPhysXScene;
+
 public:
     UBasePhysXCollider();
 

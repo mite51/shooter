@@ -4,7 +4,6 @@ UPhysXRigidBody::UPhysXRigidBody()
 {
     PrimaryComponentTick.bCanEverTick = true;
     RigidBody = nullptr;
-    PhysXSDK = nullptr;
 
     // Set default values
     Mass = 1.0f;
@@ -17,41 +16,12 @@ UPhysXRigidBody::UPhysXRigidBody()
     AngularVelocity = FVector::ZeroVector;
 }
 
-void UPhysXRigidBody::BeginPlay()
+void UPhysXRigidBody::CreateRigidBody(physx::PxPhysics* PxPhysics)
 {
-    Super::BeginPlay();
-    InitializePhysXSDK();
-    CreateRigidBody();
-}
-
-void UPhysXRigidBody::EndPlay(const EEndPlayReason::Type EndPlayReason)
-{
-    DestroyRigidBody();
-    CleanupPhysXSDK();
-    Super::EndPlay(EndPlayReason);
-}
-
-void UPhysXRigidBody::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-    Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-    SyncFromPhysX();
-
-    // Update owner's transform based on RigidBody's transform
-    if (RigidBody)
-    {
-        physx::PxTransform PxTransform = RigidBody->getGlobalPose();
-        FTransform NewTransform(FQuat(PxTransform.q.x, PxTransform.q.y, PxTransform.q.z, PxTransform.q.w),
-            FVector(PxTransform.p.x, PxTransform.p.y, PxTransform.p.z));
-        GetOwner()->SetActorTransform(NewTransform);
-    }
-}
-
-void UPhysXRigidBody::CreateRigidBody()
-{
-    if (PhysXSDK && !RigidBody)
+    if (PxPhysics && !RigidBody)
     {
         physx::PxTransform InitialTransform(physx::PxIdentity);
-        RigidBody = PhysXSDK->createRigidDynamic(InitialTransform);
+        RigidBody = PxPhysics->createRigidDynamic(InitialTransform);
         SyncToPhysX();
     }
 }
@@ -62,6 +32,52 @@ void UPhysXRigidBody::DestroyRigidBody()
     {
         RigidBody->release();
         RigidBody = nullptr;
+    }
+}
+
+void UPhysXRigidBody::SyncTransformFromPhysX()
+{
+    // Update owner's transform based on RigidBody's transform
+    if (RigidBody)
+    {
+        physx::PxTransform PxTransform = RigidBody->getGlobalPose();
+        FTransform NewTransform(FQuat(PxTransform.q.x, PxTransform.q.y, PxTransform.q.z, PxTransform.q.w),
+            FVector(PxTransform.p.x, PxTransform.p.y, PxTransform.p.z));
+        NewTransform.SetScale3D(FVector::One());
+        GetOwner()->SetActorTransform(NewTransform);
+    }
+}
+
+void UPhysXRigidBody::SyncTransformToPhysX()
+{
+    if (RigidBody)
+    {
+        FTransform transform = GetOwner()->GetActorTransform();
+
+        // Store the location and rotation
+        const FVector& location = transform.GetLocation();
+        const FQuat& rotation = transform.GetRotation();
+
+        // Convert Unreal's FQuat to PhysX's PxQuat
+        physx::PxQuat px_Rotation(
+            rotation.X,
+            rotation.Y,
+            rotation.Z,
+            rotation.W
+        );
+
+        // Convert Unreal's FVector to PhysX's PxVec3
+        physx::PxVec3 px_Position(
+            location.X,
+            location.Y,
+            location.Z
+        );
+
+        // Create the PhysX transform
+        physx::PxTransform px_Transform(px_Position, px_Rotation);
+
+        // Set the global pose of the rigid body
+        RigidBody->setGlobalPose(px_Transform);
     }
 }
 
@@ -86,6 +102,9 @@ void UPhysXRigidBody::SyncToPhysX()
         iflags |= ENABLE_CCD_MAX_CONTACT_IMPULSE * (int)physx::PxRigidBodyFlag::Enum::eENABLE_CCD_MAX_CONTACT_IMPULSE;
         iflags |= RETAIN_ACCELERATIONS * (int)physx::PxRigidBodyFlag::Enum::eRETAIN_ACCELERATIONS;
         physx::PxRigidBodyFlag::Enum flags = static_cast<physx::PxRigidBodyFlag::Enum>(iflags);
+        RigidBody->setRigidBodyFlags(flags);
+
+        SyncTransformToPhysX();
     }
 }
 
@@ -114,6 +133,8 @@ void UPhysXRigidBody::SyncFromPhysX()
         ENABLE_SPECULATIVE_CCD = RigidBodyFlags.isSet(static_cast<physx::PxRigidBodyFlag::Enum>(physx::PxRigidBodyFlag::Enum::eENABLE_SPECULATIVE_CCD));
         ENABLE_CCD_MAX_CONTACT_IMPULSE = RigidBodyFlags.isSet(static_cast<physx::PxRigidBodyFlag::Enum>(physx::PxRigidBodyFlag::Enum::eENABLE_CCD_MAX_CONTACT_IMPULSE));
         RETAIN_ACCELERATIONS = RigidBodyFlags.isSet(static_cast<physx::PxRigidBodyFlag::Enum>(physx::PxRigidBodyFlag::Enum::eRETAIN_ACCELERATIONS));
+
+        SyncTransformFromPhysX();
     }
 }
 
@@ -133,19 +154,3 @@ void UPhysXRigidBody::AddTorque(const FVector& Torque, bool bAutoWake)
     }
 }
 
-void UPhysXRigidBody::InitializePhysXSDK()
-{
-    // Note: This is a simplified initialization. In a real project, you'd want to handle this at the game level.
-//    physx::PxDefaultAllocator Allocator;
-//    physx::PxDefaultErrorCallback ErrorCallback;
-//    PhysXSDK = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, physx::PxTolerancesScale());
-}
-
-void UPhysXRigidBody::CleanupPhysXSDK()
-{
-    if (PhysXSDK)
-    {
-//        PhysXSDK->release();
-//        PhysXSDK = nullptr;
-    }
-}

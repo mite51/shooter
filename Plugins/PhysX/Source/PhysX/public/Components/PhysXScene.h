@@ -47,6 +47,9 @@ public:
     UFUNCTION(BlueprintCallable, Category = "PhysX")
     void StepPhysXSimulation(float DeltaTime);
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX Scene Flags")
+    bool bAutoStepSimulation = true;
+
     // PxSceneFlag options
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX Scene Flags")
     bool bEnableActiveActors;
@@ -164,6 +167,11 @@ public:
     physx::PxSceneDesc CreateSceneDesc(physx::PxPhysics* Physics);
 
 private:
+    void SyncPhysXTransforms();
+
+private:
+    TArray<AActor*> PhysXActors;
+    
     // Helper function to convert enum values to shift amounts
     static int FlagToShift(physx::PxSceneFlag::Enum flag);
 

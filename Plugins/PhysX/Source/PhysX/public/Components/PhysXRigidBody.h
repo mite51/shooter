@@ -13,12 +13,10 @@ class PHYSX_API UPhysXRigidBody : public UActorComponent
 {
     GENERATED_BODY()
 
+    friend class UPhysXScene;
+
 public:
     UPhysXRigidBody();
-
-    virtual void BeginPlay() override;
-    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-    virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|RigidBody")
     float Mass;
@@ -61,18 +59,14 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|RigidBody", meta = (DisplayName = "Retain Accelerations"))
     bool RETAIN_ACCELERATIONS;
 
-
-    UFUNCTION(BlueprintCallable, Category = "PhysX|RigidBody")
-    void CreateRigidBody();
-
-    UFUNCTION(BlueprintCallable, Category = "PhysX|RigidBody")
+    void CreateRigidBody(physx::PxPhysics* PxPhysics);
     void DestroyRigidBody();
 
     UFUNCTION(BlueprintCallable, Category = "PhysX|RigidBody")
-    void SyncToPhysX();
+    void SyncTransformFromPhysX();
 
     UFUNCTION(BlueprintCallable, Category = "PhysX|RigidBody")
-    void SyncFromPhysX();
+    void SyncTransformToPhysX();
 
     UFUNCTION(BlueprintCallable, Category = "PhysX|RigidBody")
     void AddForce(const FVector& Force, bool bAutoWake = true);
@@ -82,8 +76,9 @@ public:
 
 private:
     physx::PxRigidBody* RigidBody;
-    physx::PxPhysics* PhysXSDK;
 
-    void InitializePhysXSDK();
-    void CleanupPhysXSDK();
+    void SyncToPhysX();
+    void SyncFromPhysX();
+
+
 };

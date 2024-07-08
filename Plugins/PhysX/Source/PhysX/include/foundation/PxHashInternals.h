@@ -22,7 +22,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2024 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.
 
@@ -381,7 +381,7 @@ class PxHashBase : private PxAllocator
 		// iterate over old entries, re-hash and create new entries
 		if(resizeCompact)
 		{
-			// check that old free list is empty - we don't need to copy the next entries
+			// check_it that old free list is empty - we don't need to copy the next entries
 			PX_ASSERT(compacting || mFreeList == EOL);
 
 			for(uint32_t index = 0; index < mEntriesCount; ++index)
@@ -461,50 +461,50 @@ class PxHashBase : private PxAllocator
 				skip();
 			}
 		}
-/* JW - doesn't compile for some reason
-		PX_INLINE void check() const
+
+		PX_INLINE void check_it() const//??? check() breaks???
 		{
 			PX_ASSERT(mTimestamp == mBase.mTimestamp);
 		}
 		PX_INLINE const Entry& operator*() const
 		{
-			check();
+			check_it();
 			return mBase.mEntries[mEntry];
 		}
 		PX_INLINE Entry& operator*()
 		{
-			check();
+			check_it();
 			return mBase.mEntries[mEntry];
 		}
 		PX_INLINE const Entry* operator->() const
 		{
-			check();
+			check_it();
 			return mBase.mEntries + mEntry;
 		}
 		PX_INLINE Entry* operator->()
 		{
-			check();
+			check_it();
 			return mBase.mEntries + mEntry;
 		}
 		PX_INLINE Iter operator++()
 		{
-			check();
+			check_it();
 			advance();
 			return *this;
 		}
 		PX_INLINE Iter operator++(int)
 		{
-			check();
+			check_it();
 			Iter i = *this;
 			advance();
 			return i;
 		}
 		PX_INLINE bool done() const
 		{
-			check();
+			check_it();
 			return mEntry == mBase.EOL;
 		}
-*/
+
 	  private:
 		PX_INLINE void advance()
 		{
