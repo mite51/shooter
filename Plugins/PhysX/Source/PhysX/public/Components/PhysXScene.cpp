@@ -5,9 +5,9 @@
 #include "BasePhysXCollider.h"
 #include "PhysXRigidBody.h"
 #include "Kismet/GameplayStatics.h"
+#include <vector>
 
 using namespace physx;
-
 
 #include "foundation/PxErrorCallback.h"
 #include "PxPhysXConfig.h"
@@ -119,12 +119,20 @@ void UPhysXScene::BeginPlay()
     InitializePhysXSimulation();
 }
 
+void UPhysXScene::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    Super::EndPlay(EndPlayReason);
+    ShutdownPhysXSimulation();
+}
+
+
 void UPhysXScene::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
     if (bAutoStepSimulation)
     {
-        StepPhysXSimulation(DeltaTime);
+        //StepPhysXSimulation(DeltaTime);
+        StepPhysXSimulation(1.0f / 60.0f);
     }
 }
 
@@ -140,12 +148,11 @@ void UPhysXScene::StepPhysXSimulation(float DeltaTime)
 
 void UPhysXScene::InitializePhysXSimulation()
 {
-    //FPlatformProcess::GetDllHandle(L"PhysX_64.dll");
-    //FPlatformProcess::GetDllHandle(L"PhysXCommon_64.dll");
-    //FPlatformProcess::GetDllHandle(L"PhysXCooking_64.dll");
-    //FPlatformProcess::GetDllHandle(L"PhysXFoundation_64.dll");
+    if(mFoundation == nullptr)
+    {
+        mFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
+    }
 
-    mFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
     if (!mFoundation)
     {
         UE_LOG(LogTemp, Error, TEXT("PxCreateFoundation failed!"));
@@ -211,6 +218,17 @@ void UPhysXScene::InitializePhysXSimulation()
     UE_LOG(LogTemp, Log, TEXT("Initialized %d PhysX scene"), PhysXActors.Num());
 }
 
+void UPhysXScene::ShutdownPhysXSimulation()
+{
+    PX_RELEASE(mScene);
+    PX_RELEASE(mPhysics);
+    PX_RELEASE(mFoundation);
+
+    mScene = nullptr;
+    mPhysics = nullptr;
+    mFoundation = nullptr;
+}
+
 void UPhysXScene::SyncPhysXTransforms()
 {
     if (!mScene)
@@ -240,6 +258,8 @@ constexpr uint32 FlagToShift(physx::PxSceneFlag::Enum flag)
 physx::PxSceneDesc UPhysXScene::CreateSceneDesc(physx::PxPhysics* Physics)
 {
     physx::PxSceneDesc sceneDesc(Physics->getTolerancesScale());
+
+    sceneDesc.cpuDispatcher = physx::PxDefaultCpuDispatcherCreate(2);
 
     // Set gravity
     sceneDesc.gravity = physx::PxVec3(Gravity.X, Gravity.Y, Gravity.Z);

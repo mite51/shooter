@@ -39,10 +39,11 @@ public:
     UPhysXScene();
 
     virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-    UFUNCTION(BlueprintCallable, Category = "PhysX")
     void InitializePhysXSimulation();
+    void ShutdownPhysXSimulation();
 
     UFUNCTION(BlueprintCallable, Category = "PhysX")
     void StepPhysXSimulation(float DeltaTime);

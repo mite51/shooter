@@ -16,11 +16,13 @@ void UBasePhysXCollider::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     Super::EndPlay(EndPlayReason);
 
+    /* cleanup?
     if (ColliderShape)
     {
         ColliderShape->release();
         ColliderShape = nullptr;
     }
+    */
 }
 
 void UBasePhysXCollider::InitializeCollider(physx::PxPhysics* PxPhysics, physx::PxRigidActor* RigidActor)
