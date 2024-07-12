@@ -48,6 +48,10 @@ public:
     UFUNCTION(BlueprintCallable, Category = "PhysX")
     void StepPhysXSimulation(float DeltaTime);
 
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX Scene Flags")
+    FString PVD_HOST_IP = "127.0.0.1";
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX Scene Flags")
     bool bAutoStepSimulation = true;
 
@@ -181,8 +185,11 @@ private:
     static physx::PxFrictionType::Enum ToPxFrictionType(EPxFrictionType Type);
     static physx::PxSolverType::Enum ToPxSolverType(EPxSolverType Type);
 
-    physx::PxFoundation* mFoundation;
-    physx::PxPhysics* mPhysics;
-    physx::PxScene* mScene;
+    physx::PxFoundation* mFoundation = nullptr;
+    physx::PxPhysics* mPhysics = nullptr;
+    physx::PxScene* mScene = nullptr;
+    physx::PxPvd* mPvd = nullptr;
+    physx::PxDefaultCpuDispatcher* mDispatcher = nullptr;
+
 };
 

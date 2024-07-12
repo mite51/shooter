@@ -36,6 +36,7 @@ public class PhysX : ModuleRules
 			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "lib", "PhysXCooking_64.lib"));
 			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "lib", "PhysXFoundation_64.lib"));
 			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "lib", "PhysXExtensions_static_64.lib"));
+			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "lib", "PhysXPvdSDK_static_64.lib"));
 
 
 		}

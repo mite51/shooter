@@ -62,6 +62,8 @@ public:
     void CreateRigidBody(physx::PxPhysics* PxPhysics);
     void DestroyRigidBody();
 
+    static physx::PxTransform GetActorTransform(const AActor* actor);
+
     UFUNCTION(BlueprintCallable, Category = "PhysX|RigidBody")
     void SyncTransformFromPhysX();
 
@@ -75,7 +77,7 @@ public:
     void AddTorque(const FVector& Torque, bool bAutoWake = true);
 
 private:
-    physx::PxRigidBody* RigidBody;
+    physx::PxRigidDynamic* RigidBody;
 
     void SyncToPhysX();
     void SyncFromPhysX();

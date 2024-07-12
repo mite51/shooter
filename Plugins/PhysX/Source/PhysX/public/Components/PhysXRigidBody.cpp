@@ -20,9 +20,9 @@ void UPhysXRigidBody::CreateRigidBody(physx::PxPhysics* PxPhysics)
 {
     if (PxPhysics && !RigidBody)
     {
-        physx::PxTransform InitialTransform(physx::PxIdentity);
-        RigidBody = PxPhysics->createRigidDynamic(InitialTransform);
-        SyncToPhysX();
+        physx::PxTransform T = GetActorTransform(GetOwner());
+        RigidBody = PxPhysics->createRigidDynamic(T);
+        //SyncToPhysX();
     }
 }
 
@@ -43,41 +43,45 @@ void UPhysXRigidBody::SyncTransformFromPhysX()
         physx::PxTransform PxTransform = RigidBody->getGlobalPose();
         FTransform NewTransform(FQuat(PxTransform.q.x, PxTransform.q.y, PxTransform.q.z, PxTransform.q.w),
             FVector(PxTransform.p.x, PxTransform.p.y, PxTransform.p.z));
-        NewTransform.SetScale3D(FVector::One());
+        NewTransform.SetScale3D(FVector::One());//??needed?
         GetOwner()->SetActorTransform(NewTransform);
     }
+}
+
+physx::PxTransform UPhysXRigidBody::GetActorTransform(const AActor* actor)
+{
+    FTransform transform = actor->GetActorTransform();
+
+    // Store the location and rotation
+    const FVector& location = transform.GetLocation();
+    const FQuat& rotation = transform.GetRotation();
+
+    // Convert Unreal's FQuat to PhysX's PxQuat
+    physx::PxQuat px_Rotation(
+        rotation.X,
+        rotation.Y,
+        rotation.Z,
+        rotation.W
+    );
+
+    // Convert Unreal's FVector to PhysX's PxVec3
+    physx::PxVec3 px_Position(
+        location.X,
+        location.Y,
+        location.Z
+    );
+
+    // Create the PhysX transform
+    return physx::PxTransform(px_Position, px_Rotation);
 }
 
 void UPhysXRigidBody::SyncTransformToPhysX()
 {
     if (RigidBody)
     {
-        FTransform transform = GetOwner()->GetActorTransform();
-
-        // Store the location and rotation
-        const FVector& location = transform.GetLocation();
-        const FQuat& rotation = transform.GetRotation();
-
-        // Convert Unreal's FQuat to PhysX's PxQuat
-        physx::PxQuat px_Rotation(
-            rotation.X,
-            rotation.Y,
-            rotation.Z,
-            rotation.W
-        );
-
-        // Convert Unreal's FVector to PhysX's PxVec3
-        physx::PxVec3 px_Position(
-            location.X,
-            location.Y,
-            location.Z
-        );
-
-        // Create the PhysX transform
-        physx::PxTransform px_Transform(px_Position, px_Rotation);
-
         // Set the global pose of the rigid body
-        RigidBody->setGlobalPose(px_Transform);
+        physx::PxTransform T = GetActorTransform(GetOwner());
+        RigidBody->setGlobalPose(T);
     }
 }
 
@@ -104,7 +108,7 @@ void UPhysXRigidBody::SyncToPhysX()
         physx::PxRigidBodyFlag::Enum flags = static_cast<physx::PxRigidBodyFlag::Enum>(iflags);
         RigidBody->setRigidBodyFlags(flags);
 
-        SyncTransformToPhysX();
+        //SyncTransformToPhysX();
     }
 }
 
@@ -134,7 +138,7 @@ void UPhysXRigidBody::SyncFromPhysX()
         ENABLE_CCD_MAX_CONTACT_IMPULSE = RigidBodyFlags.isSet(static_cast<physx::PxRigidBodyFlag::Enum>(physx::PxRigidBodyFlag::Enum::eENABLE_CCD_MAX_CONTACT_IMPULSE));
         RETAIN_ACCELERATIONS = RigidBodyFlags.isSet(static_cast<physx::PxRigidBodyFlag::Enum>(physx::PxRigidBodyFlag::Enum::eRETAIN_ACCELERATIONS));
 
-        SyncTransformFromPhysX();
+        //SyncTransformFromPhysX();
     }
 }
 

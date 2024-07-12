@@ -132,7 +132,8 @@ void UPhysXScene::TickComponent(float DeltaTime, ELevelTick TickType, FActorComp
     if (bAutoStepSimulation)
     {
         //StepPhysXSimulation(DeltaTime);
-        StepPhysXSimulation(1.0f / 60.0f);
+        //StepPhysXSimulation(1.0f / 60.0f);
+        StepPhysXSimulation(1.0f / 30.0f);
     }
 }
 
@@ -159,7 +160,11 @@ void UPhysXScene::InitializePhysXSimulation()
         return;
     }
 
-    mPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *mFoundation, physx::PxTolerancesScale());
+    mPvd = PxCreatePvd(*mFoundation);
+    physx::PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate(TCHAR_TO_ANSI(*PVD_HOST_IP), 5425, 10);
+    mPvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
+
+    mPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *mFoundation, physx::PxTolerancesScale(), true, mPvd);
     if (!mPhysics)
     {
         UE_LOG(LogTemp, Error, TEXT("PxCreatePhysics failed!"));
@@ -192,26 +197,49 @@ void UPhysXScene::InitializePhysXSimulation()
     for (AActor* Actor : FoundActors)
     {
         UPhysXRigidBody* RigidBodyComponent = Actor->FindComponentByClass<UPhysXRigidBody>();
+        
+        // Find and initialize all colliders
+        TArray<UBasePhysXCollider*> Colliders;
+        Actor->GetComponents<UBasePhysXCollider>(Colliders);
 
         if (RigidBodyComponent)
         {
+
             // Create the PhysX rigid body
             RigidBodyComponent->CreateRigidBody(mPhysics);
 
-            // Find and initialize all colliders
-            TArray<UBasePhysXCollider*> Colliders;
-            Actor->GetComponents<UBasePhysXCollider>(Colliders);
+            physx::PxRigidDynamic* pDynamic = RigidBodyComponent->RigidBody;
 
             for (UBasePhysXCollider* Collider : Colliders)
             {
-                Collider->InitializeCollider(mPhysics, RigidBodyComponent->RigidBody);
+                Collider->InitializeCollider(mPhysics, pDynamic);
             }
+
+            //PxRigidBodyExt::updateMassAndInertia(*pDynamic, 10.0f);
+
+            // Add the rigid body to the PhysX scene
+            mScene->addActor(*pDynamic);
 
             // Add the actor to our PhysX actors array
             PhysXActors.Add(Actor);
+        }
+        else if (Colliders.Num() > 0)
+        { 
+            PxRigidStatic* groundPlane = PxCreatePlane(*mPhysics, PxPlane(0, 0, 1, 0), *mPhysics->createMaterial(0.5f, 0.5f, 0.1f));
+            mScene->addActor(*groundPlane);
+/*
+            // Create the PhysX static body
+            physx::PxTransform T = UPhysXRigidBody::GetActorTransform(Actor);
+            physx::PxRigidStatic* pStatic = mPhysics->createRigidStatic(T);
+
+            for (UBasePhysXCollider* Collider : Colliders)
+            {
+                Collider->InitializeCollider(mPhysics, pStatic);
+            }
 
             // Add the rigid body to the PhysX scene
-            mScene->addActor(*RigidBodyComponent->RigidBody);
+            mScene->addActor(*pStatic);
+*/
         }
     }
 
@@ -221,7 +249,14 @@ void UPhysXScene::InitializePhysXSimulation()
 void UPhysXScene::ShutdownPhysXSimulation()
 {
     PX_RELEASE(mScene);
+    PX_RELEASE(mDispatcher);
     PX_RELEASE(mPhysics);
+    if (mPvd)
+    {
+        PxPvdTransport* transport = mPvd->getTransport();
+        PX_RELEASE(mPvd);
+        PX_RELEASE(transport);
+    }
     PX_RELEASE(mFoundation);
 
     mScene = nullptr;
@@ -259,7 +294,9 @@ physx::PxSceneDesc UPhysXScene::CreateSceneDesc(physx::PxPhysics* Physics)
 {
     physx::PxSceneDesc sceneDesc(Physics->getTolerancesScale());
 
-    sceneDesc.cpuDispatcher = physx::PxDefaultCpuDispatcherCreate(2);
+    mDispatcher = PxDefaultCpuDispatcherCreate(2);
+    sceneDesc.cpuDispatcher = mDispatcher;
+    sceneDesc.filterShader = PxDefaultSimulationFilterShader;
 
     // Set gravity
     sceneDesc.gravity = physx::PxVec3(Gravity.X, Gravity.Y, Gravity.Z);
