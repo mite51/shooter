@@ -21,7 +21,9 @@ public:
     FVector LocalPosition;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Collider")
-    FQuat LocalRotation;
+    FQuat LocalRotation = FQuat::Identity;
+
+    virtual physx::PxTransform MakePhysXTransform();
 
 protected:
     virtual void BeginPlay() override;

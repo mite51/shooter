@@ -62,7 +62,7 @@ public:
     void CreateRigidBody(physx::PxPhysics* PxPhysics);
     void DestroyRigidBody();
 
-    static physx::PxTransform GetActorTransform(const AActor* actor);
+    physx::PxTransform MakeActorTransform();
 
     UFUNCTION(BlueprintCallable, Category = "PhysX|RigidBody")
     void SyncTransformFromPhysX();

@@ -12,6 +12,8 @@ class PHYSX_API UPlanePhysXCollider : public UBasePhysXCollider
 public:
     UPlanePhysXCollider();
 
+    virtual physx::PxTransform MakePhysXTransform() override;
+
 protected:
     virtual physx::PxGeometry* CreateGeometry(physx::PxPhysics* PxPhysics) override;
 };

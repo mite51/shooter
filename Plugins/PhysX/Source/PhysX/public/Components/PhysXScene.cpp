@@ -225,21 +225,25 @@ void UPhysXScene::InitializePhysXSimulation()
         }
         else if (Colliders.Num() > 0)
         { 
-            PxRigidStatic* groundPlane = PxCreatePlane(*mPhysics, PxPlane(0, 0, 1, 0), *mPhysics->createMaterial(0.5f, 0.5f, 0.1f));
-            mScene->addActor(*groundPlane);
-/*
             // Create the PhysX static body
-            physx::PxTransform T = UPhysXRigidBody::GetActorTransform(Actor);
+            // NOTE : I'm not sure this is the right way to build static actors :/
+            // a plane seems to need a special transform, but then how can one 
+            // static actor have mulitple shapes that need different tranforms?
+            physx::PxTransform T = Colliders[0]->MakePhysXTransform();
             physx::PxRigidStatic* pStatic = mPhysics->createRigidStatic(T);
 
             for (UBasePhysXCollider* Collider : Colliders)
             {
-                Collider->InitializeCollider(mPhysics, pStatic);
+                //Collider->InitializeCollider(mPhysics, pStatic);
+                physx::PxGeometry* Geometry = Collider->CreateGeometry(mPhysics);
+                physx::PxShape* ColliderShape = mPhysics->createShape(*Geometry, *mPhysics->createMaterial(0.5f, 0.5f, 0.1f), true);
+                pStatic->attachShape(*ColliderShape);
+                ColliderShape->release();
             }
 
             // Add the rigid body to the PhysX scene
             mScene->addActor(*pStatic);
-*/
+
         }
     }
 

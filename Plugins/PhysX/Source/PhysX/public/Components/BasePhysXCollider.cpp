@@ -42,9 +42,36 @@ void UBasePhysXCollider::InitializeCollider(physx::PxPhysics* PxPhysics, physx::
         ColliderShape->setContactOffset(ContactOffset);
         ColliderShape->setRestOffset(RestOffset);
         RigidActor->attachShape(*ColliderShape);
+        ColliderShape->release();
     }
+}
 
-    delete Geometry;
+physx::PxTransform UBasePhysXCollider::MakePhysXTransform()
+{
+    const AActor* actor = GetOwner();
+    FTransform transform = actor->GetActorTransform();
+
+    // Store the location and rotation
+    const FVector& location = transform.GetLocation();
+    const FQuat& rotation = transform.GetRotation();
+
+    // Convert Unreal's FQuat to PhysX's PxQuat
+    physx::PxQuat px_Rotation(
+        rotation.X,
+        rotation.Y,
+        rotation.Z,
+        rotation.W
+    );
+
+    // Convert Unreal's FVector to PhysX's PxVec3
+    physx::PxVec3 px_Position(
+        location.X,
+        location.Y,
+        location.Z
+    );
+
+    // Create the PhysX transform
+    return physx::PxTransform(px_Position, px_Rotation);
 }
 
 
