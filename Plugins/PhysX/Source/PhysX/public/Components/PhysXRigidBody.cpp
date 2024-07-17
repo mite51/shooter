@@ -20,7 +20,7 @@ void UPhysXRigidBody::CreateRigidBody(physx::PxPhysics* PxPhysics)
 {
     if (PxPhysics && !RigidBody)
     {
-        physx::PxTransform T = MakeActorTransform();
+        physx::PxTransform T = MakePxTransform();
         RigidBody = PxPhysics->createRigidDynamic(T);
         SyncToPhysX();
     }
@@ -48,11 +48,8 @@ void UPhysXRigidBody::SyncTransformFromPhysX()
     }
 }
 
-physx::PxTransform UPhysXRigidBody::MakeActorTransform()
+physx::PxTransform UPhysXRigidBody::MakePxTransform(FTransform transform)
 {
-    const AActor* actor = GetOwner();
-    FTransform transform = actor->GetActorTransform();
-
     // Store the location and rotation
     const FVector& location = transform.GetLocation();
     const FQuat& rotation = transform.GetRotation();
@@ -76,12 +73,19 @@ physx::PxTransform UPhysXRigidBody::MakeActorTransform()
     return physx::PxTransform(px_Position, px_Rotation);
 }
 
+physx::PxTransform UPhysXRigidBody::MakePxTransform()
+{
+    const AActor* actor = GetOwner();
+    FTransform transform = actor->GetActorTransform();
+    return MakePxTransform(transform);
+}
+
 void UPhysXRigidBody::SyncTransformToPhysX()
 {
     if (RigidBody)
     {
         // Set the global pose of the rigid body
-        physx::PxTransform T = MakeActorTransform();
+        physx::PxTransform T = MakePxTransform();
         RigidBody->setGlobalPose(T);
     }
 }

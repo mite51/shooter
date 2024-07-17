@@ -7,6 +7,7 @@
 #include "PxRigidBody.h"
 #include "PhysXRigidBody.generated.h"
 
+using namespace physx;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class PHYSX_API UPhysXRigidBody : public UActorComponent
@@ -61,8 +62,10 @@ public:
 
     void CreateRigidBody(physx::PxPhysics* PxPhysics);
     void DestroyRigidBody();
+    PxRigidActor* GetPhysXRigidActor() const { return RigidBody; }
 
-    physx::PxTransform MakeActorTransform();
+    PxTransform MakePxTransform();
+    static PxTransform MakePxTransform(FTransform T);
 
     UFUNCTION(BlueprintCallable, Category = "PhysX|RigidBody")
     void SyncTransformFromPhysX();
@@ -77,7 +80,7 @@ public:
     void AddTorque(const FVector& Torque, bool bAutoWake = true);
 
 private:
-    physx::PxRigidDynamic* RigidBody;
+    PxRigidDynamic* RigidBody;
 
     void SyncToPhysX();
     void SyncFromPhysX();

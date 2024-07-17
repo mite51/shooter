@@ -188,6 +188,7 @@ private:
     physx::PxFoundation* mFoundation = nullptr;
     physx::PxPhysics* mPhysics = nullptr;
     physx::PxScene* mScene = nullptr;
+    //physx::PxArray<PxConstraint*>* gConstraints;
     physx::PxPvd* mPvd = nullptr;
     physx::PxDefaultCpuDispatcher* mDispatcher = nullptr;
 

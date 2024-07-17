@@ -2,7 +2,8 @@
 
 
 #include "../../include/PxPhysicsAPI.h"
-#include "BasePhysXCollider.h"
+#include "Collider/BasePhysXCollider.h"
+#include "Joint/PhysXJointBase.h"
 #include "PhysXRigidBody.h"
 #include "Kismet/GameplayStatics.h"
 #include <vector>
@@ -171,6 +172,8 @@ void UPhysXScene::InitializePhysXSimulation()
         return;
     }
 
+    //mConstraints = new physx::PxArray<PxConstraint*>();
+
     physx::PxSceneDesc sceneDesc = CreateSceneDesc(mPhysics);
     mScene = mPhysics->createScene(sceneDesc);
     if (!mScene)
@@ -229,6 +232,7 @@ void UPhysXScene::InitializePhysXSimulation()
             // NOTE : I'm not sure this is the right way to build static actors :/
             // a plane seems to need a special transform, but then how can one 
             // static actor have mulitple shapes that need different tranforms?
+            // Maybe colliders should have a virtual function to create a rigid actor per collider?
             physx::PxTransform T = Colliders[0]->MakePhysXTransform();
             physx::PxRigidStatic* pStatic = mPhysics->createRigidStatic(T);
 
@@ -243,7 +247,14 @@ void UPhysXScene::InitializePhysXSimulation()
 
             // Add the rigid body to the PhysX scene
             mScene->addActor(*pStatic);
+        }
 
+        // Find and initialize all joints
+        TArray<UPhysXJointBase*> Joints;
+        Actor->GetComponents<UPhysXJointBase>(Joints);
+        for (UPhysXJointBase* Joint : Joints)
+        {
+            Joint->CreateJoint(mPhysics);
         }
     }
 

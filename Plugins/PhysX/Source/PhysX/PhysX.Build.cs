@@ -15,7 +15,7 @@ public class PhysX : ModuleRules
 		//PublicDefinitions.Add("_WIN64");
 		//PublicDefinitions.Add("WIN64");
 
-		PublicDependencyModuleNames.AddRange(new[] {"Core", "CoreUObject", "Engine", "Landscape" }); 
+		PublicDependencyModuleNames.AddRange(new[] {"Core", "CoreUObject", "Engine", "Landscape", "UnrealEd" }); 
 
 		//if ((Target.Platform == UnrealTargetPlatform.Win64) || (Target.Platform == UnrealTargetPlatform.Win32))
 		if (Target.Platform == UnrealTargetPlatform.Win64)
@@ -37,9 +37,6 @@ public class PhysX : ModuleRules
 			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "lib", "PhysXFoundation_64.lib"));
 			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "lib", "PhysXExtensions_static_64.lib"));
 			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "lib", "PhysXPvdSDK_static_64.lib"));
-
-
 		}
-
 	}
 }
