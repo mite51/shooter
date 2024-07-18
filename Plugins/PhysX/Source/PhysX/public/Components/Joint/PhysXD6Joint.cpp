@@ -75,8 +75,6 @@ void UPhysXD6Joint::CreateJoint(physx::PxPhysics* PxPhysics)
 
     PxTransform PxLocalPose0 = uRigidBody0->MakePxTransform();
     PxTransform PxLocalPose1 = uRigidBody1->MakePxTransform();
-    //PxTransform PxLocalPose0 = PxTransform(PxIdentity);
-    //PxTransform PxLocalPose1 = PxTransform(PxIdentity);
 
     D6Joint = PxD6JointCreate(*PxPhysics, PxActor0, PxLocalPose0, PxActor1, PxLocalPose1);
 
