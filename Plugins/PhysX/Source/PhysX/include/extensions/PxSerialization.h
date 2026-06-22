@@ -41,7 +41,7 @@
 PX_BINARY_SERIAL_VERSION is used to version the PhysX binary data and meta data. The global unique identifier of the PhysX SDK needs to match 
 the one in the data and meta data, otherwise they are considered incompatible. A 32 character wide GUID can be generated with https://www.guidgenerator.com/ for example. 
 */
-#define PX_BINARY_SERIAL_VERSION "EEDFDB718C504480BB77F9B8DA353B60"
+#define PX_BINARY_SERIAL_VERSION "3B794FCE39C34CE58F6065FA172B0A36"
 
 
 #if !PX_DOXYGEN

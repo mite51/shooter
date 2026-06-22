@@ -2,10 +2,19 @@
 #pragma once
 
 #include "Engine/EngineTypes.h"
-#include "PxPhysicsAPI.h"
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+
+// Temporarily undefine Unreal's check macro to avoid conflicts with PhysX
+#pragma push_macro("check")
+#undef check
+
+#include "PxPhysicsAPI.h"
 #include "PhysXPublic.h"
+
+// Restore Unreal's check macro
+#pragma pop_macro("check")
+
 #include "../PhysXRigidBody.h"
 #include "PhysXJointBase.generated.h"
 

@@ -381,7 +381,7 @@ class PxHashBase : private PxAllocator
 		// iterate over old entries, re-hash and create new entries
 		if(resizeCompact)
 		{
-			// check_it that old free list is empty - we don't need to copy the next entries
+			// check that old free list is empty - we don't need to copy the next entries
 			PX_ASSERT(compacting || mFreeList == EOL);
 
 			for(uint32_t index = 0; index < mEntriesCount; ++index)
@@ -462,46 +462,46 @@ class PxHashBase : private PxAllocator
 			}
 		}
 
-		PX_INLINE void check_it() const//??? check() breaks???
+		PX_INLINE void check_timestamp() const
 		{
 			PX_ASSERT(mTimestamp == mBase.mTimestamp);
 		}
 		PX_INLINE const Entry& operator*() const
 		{
-			check_it();
+			check_timestamp();
 			return mBase.mEntries[mEntry];
 		}
 		PX_INLINE Entry& operator*()
 		{
-			check_it();
+			check_timestamp();
 			return mBase.mEntries[mEntry];
 		}
 		PX_INLINE const Entry* operator->() const
 		{
-			check_it();
+			check_timestamp();
 			return mBase.mEntries + mEntry;
 		}
 		PX_INLINE Entry* operator->()
 		{
-			check_it();
+			check_timestamp();
 			return mBase.mEntries + mEntry;
 		}
 		PX_INLINE Iter operator++()
 		{
-			check_it();
+			check_timestamp();
 			advance();
 			return *this;
 		}
 		PX_INLINE Iter operator++(int)
 		{
-			check_it();
+			check_timestamp();
 			Iter i = *this;
 			advance();
 			return i;
 		}
 		PX_INLINE bool done() const
 		{
-			check_it();
+			check_timestamp();
 			return mEntry == mBase.EOL;
 		}
 

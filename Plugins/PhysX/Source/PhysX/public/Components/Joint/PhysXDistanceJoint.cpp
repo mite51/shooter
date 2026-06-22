@@ -6,7 +6,6 @@
 #if WITH_EDITOR
 #include "UnrealEd.h"
 #include "PhysXDistanceJoint_Visualizer.h"
-static bool gRegisteredVisualizer = false;
 #endif
 
 
@@ -14,6 +13,7 @@ UPhysXDistanceJoint::UPhysXDistanceJoint()
     : DistanceJoint(nullptr)
 {
 #if WITH_EDITOR
+    static bool gRegisteredVisualizer = false;
     if (!gRegisteredVisualizer && GUnrealEd)
     {
         gRegisteredVisualizer = true;

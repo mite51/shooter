@@ -1,6 +1,15 @@
 #include "HeightFieldPhysXCollider.h"
 #include "PhysXPublic.h"
+
+// Temporarily undefine Unreal's check macro to avoid conflicts with PhysX
+#pragma push_macro("check")
+#undef check
+
 #include "cooking/PxCooking.h"
+
+// Restore Unreal's check macro
+#pragma pop_macro("check")
+
 #include "LandscapeComponent.h"
 #include "LandscapeDataAccess.h"
 

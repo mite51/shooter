@@ -16,6 +16,10 @@ namespace physx
 	class PxMassProperties;
 }
 
+** for Unreal 5.6, the PhysicsInterface_Chaos.h CreateShape() uses "physx::PxGeometry*" which is undefined, its safe to just comment that out
+
+------------- 
+in visual studio package manager, update Magick.NET-Q16-HDRI-AnyCPU to  14.9.1
 
 -------------
 git lfs install
@@ -24,3 +28,5 @@ git add .gitattributes
 
 https://stackoverflow.com/questions/33330771/git-lfs-this-exceeds-githubs-file-size-limit-of-100-00-mb
 git lfs migrate import --include="*.csv"
+
+

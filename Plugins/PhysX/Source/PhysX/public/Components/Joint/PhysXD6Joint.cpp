@@ -6,12 +6,12 @@
 #if WITH_EDITOR
 #include "UnrealEd.h"
 #include "PhysXD6Joint_Visualizer.h"
-static bool gRegisteredVisualizer = false;
 #endif
 
 UPhysXD6Joint::UPhysXD6Joint() : UPhysXJointBase()
 {
 #if WITH_EDITOR
+    static bool gRegisteredVisualizer = false;
     if (!gRegisteredVisualizer && GUnrealEd)
     {
         gRegisteredVisualizer = true;
