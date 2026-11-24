@@ -1,5 +1,4 @@
 
-//https://docs.unrealengine.com/5.3/en-US/integrating-third-party-libraries-into-unreal-engine/
 using UnrealBuildTool;
 using System.IO;
 
@@ -7,51 +6,63 @@ public class PhysX : ModuleRules
 {
 	public PhysX(ReadOnlyTargetRules Target) : base(Target)
 	{
-		//Type = ModuleType.External;
-		//PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+		PCHUsage = PCHUsageMode.NoPCHs;
 
-		// Add any macros that need to be set
 		PublicDefinitions.Add("USING_PHYSX=1");
-        //PublicDefinitions.Add("_WIN64");
-        //PublicDefinitions.Add("WIN64");
+		PublicDefinitions.Add("PHYSX_SDK_VERSION=\"5.6.1\"");
+		PrivateIncludePaths.Add(ModuleDirectory);
 
-        PublicDependencyModuleNames.AddRange(new[] {"Core", "CoreUObject", "Engine", "Landscape", "UnrealEd" }); 
+		PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "Landscape" });
 
-	//if ((Target.Platform == UnrealTargetPlatform.Win64) || (Target.Platform == UnrealTargetPlatform.Win32))
-	if (Target.Platform == UnrealTargetPlatform.Win64)
-	{
-		// Add any include paths for the plugin
-		PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "include"));
+		if (Target.bBuildEditor)
+		{
+			PrivateDependencyModuleNames.AddRange(new[] { "AssetRegistry", "MeshDescription", "StaticMeshDescription", "UnrealEd" });
+		}
 
-		// Get the plugin's root directory (two levels up from Source/PhysX)
-		string PluginPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", ".."));
-		string BinariesPath = Path.Combine(PluginPath, "Binaries", "Win64");
+		if (Target.Platform == UnrealTargetPlatform.Win64)
+		{
+			PublicSystemIncludePaths.Add(Path.Combine(ModuleDirectory, "include"));
 
-		// Add the plugin's Binaries folder to the DLL search path
-		PublicRuntimeLibraryPaths.Add(BinariesPath);
+			string PluginPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", ".."));
+			string BinariesPath = Path.Combine(PluginPath, "Binaries", "Win64");
+			string LibPath = Path.Combine(ModuleDirectory, "lib");
 
-		
-		// Add delay load DLLs (ONLY the DLL name, no path!)
-		PublicDelayLoadDLLs.Add("PhysXCommon_64.dll");
-		PublicDelayLoadDLLs.Add("PhysX_64.dll");
-		PublicDelayLoadDLLs.Add("PhysXCooking_64.dll");
-		PublicDelayLoadDLLs.Add("PhysXFoundation_64.dll");
+			PublicRuntimeLibraryPaths.Add(BinariesPath);
 
-		// Add runtime dependencies from the plugin's Binaries folder
-		// This ensures DLLs are staged during packaging
-		RuntimeDependencies.Add(Path.Combine(BinariesPath, "PhysXCommon_64.dll"));
-		RuntimeDependencies.Add(Path.Combine(BinariesPath, "PhysX_64.dll"));
-		RuntimeDependencies.Add(Path.Combine(BinariesPath, "PhysXCooking_64.dll"));
-		RuntimeDependencies.Add(Path.Combine(BinariesPath, "PhysXFoundation_64.dll"));
+			string[] RuntimeDlls =
+			{
+				"PhysXCommon_64.dll",
+				"PhysX_64.dll",
+				"PhysXCooking_64.dll",
+				"PhysXFoundation_64.dll",
+				"PVDRuntime_64.dll"
+			};
 
-		// Add import libraries or static libraries
-		string LibPath = Path.Combine(ModuleDirectory, "lib");
-		PublicAdditionalLibraries.Add(Path.Combine(LibPath, "PhysXCommon_64.lib"));
-		PublicAdditionalLibraries.Add(Path.Combine(LibPath, "PhysX_64.lib"));
-		PublicAdditionalLibraries.Add(Path.Combine(LibPath, "PhysXCooking_64.lib"));
-		PublicAdditionalLibraries.Add(Path.Combine(LibPath, "PhysXFoundation_64.lib"));
-		PublicAdditionalLibraries.Add(Path.Combine(LibPath, "PhysXExtensions_static_64.lib"));
-		PublicAdditionalLibraries.Add(Path.Combine(LibPath, "PhysXPvdSDK_static_64.lib"));
+			foreach (string RuntimeDll in RuntimeDlls)
+			{
+				PublicDelayLoadDLLs.Add(RuntimeDll);
+				RuntimeDependencies.Add(Path.Combine(BinariesPath, RuntimeDll));
+			}
+
+			string[] ImportLibraries =
+			{
+				"PhysXCommon_64.lib",
+				"PhysX_64.lib",
+				"PhysXCooking_64.lib",
+				"PhysXFoundation_64.lib",
+				"PhysXExtensions_static_64.lib",
+				"PhysXPvdSDK_static_64.lib",
+				"PVDRuntime_64.lib"
+			};
+
+			foreach (string ImportLibrary in ImportLibraries)
+			{
+				PublicAdditionalLibraries.Add(Path.Combine(LibPath, ImportLibrary));
+			}
+		}
+		else
+		{
+			throw new BuildException("The PhysX plugin currently supports Win64 only.");
+		}
 	}
-}
 }

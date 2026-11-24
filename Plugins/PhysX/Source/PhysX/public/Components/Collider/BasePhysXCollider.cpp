@@ -1,8 +1,15 @@
 #include "BasePhysXCollider.h"
+#include "Components/PhysXMaterial.h"
+#include "PhysXTypeConversions.h"
+#include "GameFramework/Actor.h"
 
 UBasePhysXCollider::UBasePhysXCollider()
 {
     PrimaryComponentTick.bCanEverTick = false;
+    LocalPosition = FVector::ZeroVector;
+    LocalRotation = FQuat::Identity;
+    Material = nullptr;
+    ColliderShape = nullptr;
     ContactOffset = 0.02f; // Default PhysX value
     RestOffset = 0.0f;
 }
@@ -25,7 +32,7 @@ void UBasePhysXCollider::EndPlay(const EEndPlayReason::Type EndPlayReason)
     */
 }
 
-void UBasePhysXCollider::InitializeCollider(physx::PxPhysics* PxPhysics, physx::PxRigidActor* RigidActor)
+void UBasePhysXCollider::InitializeCollider(physx::PxPhysics* PxPhysics, physx::PxRigidActor* RigidActor, physx::PxMaterial* DefaultMaterial)
 {
     if (!PxPhysics || !RigidActor)
         return;
@@ -34,44 +41,60 @@ void UBasePhysXCollider::InitializeCollider(physx::PxPhysics* PxPhysics, physx::
     if (!Geometry)
         return;
 
-    ColliderShape = PxPhysics->createShape(*Geometry, *PxPhysics->createMaterial(0.5f, 0.5f, 0.1f), true);
+    physx::PxMaterial* TransientMaterial = nullptr;
+    physx::PxMaterial* ShapeMaterial = ResolveMaterial(PxPhysics, DefaultMaterial, TransientMaterial);
+    if (!ShapeMaterial)
+    {
+        delete Geometry;
+        return;
+    }
+
+    ColliderShape = PxPhysics->createShape(*Geometry, *ShapeMaterial, true);
+    delete Geometry;
+
     if (ColliderShape)
     {
-        ColliderShape->setLocalPose(physx::PxTransform(physx::PxVec3(LocalPosition.X, LocalPosition.Y, LocalPosition.Z),
-            physx::PxQuat(LocalRotation.X, LocalRotation.Y, LocalRotation.Z, LocalRotation.W)));
+        ColliderShape->setLocalPose(physx::PxTransform(UEPhysX::ToPxVec3(LocalPosition), UEPhysX::ToPxQuat(LocalRotation)));
         ColliderShape->setContactOffset(ContactOffset);
         ColliderShape->setRestOffset(RestOffset);
         RigidActor->attachShape(*ColliderShape);
         ColliderShape->release();
     }
+
+    if (TransientMaterial)
+    {
+        TransientMaterial->release();
+    }
 }
 
-physx::PxTransform UBasePhysXCollider::MakePhysXTransform()
+FTransform UBasePhysXCollider::MakePhysXTransform()
 {
     const AActor* actor = GetOwner();
-    FTransform transform = actor->GetActorTransform();
-
-    // Store the location and rotation
-    const FVector& location = transform.GetLocation();
-    const FQuat& rotation = transform.GetRotation();
-
-    // Convert Unreal's FQuat to PhysX's PxQuat
-    physx::PxQuat px_Rotation(
-        rotation.X,
-        rotation.Y,
-        rotation.Z,
-        rotation.W
-    );
-
-    // Convert Unreal's FVector to PhysX's PxVec3
-    physx::PxVec3 px_Position(
-        location.X,
-        location.Y,
-        location.Z
-    );
-
-    // Create the PhysX transform
-    return physx::PxTransform(px_Position, px_Rotation);
+    return actor ? actor->GetActorTransform() : FTransform::Identity;
 }
 
+physx::PxMaterial* UBasePhysXCollider::ResolveMaterial(physx::PxPhysics* PxPhysics, physx::PxMaterial* DefaultMaterial, physx::PxMaterial*& OutTransientMaterial) const
+{
+    OutTransientMaterial = nullptr;
 
+    if (Material)
+    {
+        return Material->GetOrCreateMaterial(*PxPhysics);
+    }
+
+    if (const AActor* Owner = GetOwner())
+    {
+        if (UPhysXMaterial* OwnerMaterial = Owner->FindComponentByClass<UPhysXMaterial>())
+        {
+            return OwnerMaterial->GetOrCreateMaterial(*PxPhysics);
+        }
+    }
+
+    if (DefaultMaterial)
+    {
+        return DefaultMaterial;
+    }
+
+    OutTransientMaterial = PxPhysics->createMaterial(0.5f, 0.5f, 0.1f);
+    return OutTransientMaterial;
+}

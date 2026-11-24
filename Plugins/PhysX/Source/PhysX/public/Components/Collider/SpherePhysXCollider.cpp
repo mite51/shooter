@@ -1,8 +1,9 @@
 #include "SpherePhysXCollider.h"
+#include "NvidiaPhysXIncludes.h"
 
 USpherePhysXCollider::USpherePhysXCollider()
 {
-    
+    Radius = 50.0f;
 }
 
 physx::PxGeometry* USpherePhysXCollider::CreateGeometry(physx::PxPhysics* PxPhysics)

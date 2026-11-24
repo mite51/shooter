@@ -2,18 +2,12 @@
 
 #include "PhysXJointBase.h"
 
-// Temporarily undefine Unreal's check macro to avoid conflicts with PhysX
-#pragma push_macro("check")
-#undef check
-
-#include "PxPhysicsAPI.h"
-
-// Restore Unreal's check macro
-#pragma pop_macro("check")
-
 #include "PhysXDistanceJoint.generated.h"
 
-using namespace physx;
+namespace physx
+{
+    class PxDistanceJoint;
+}
 
 UCLASS(ClassGroup = (PhysX), meta = (BlueprintSpawnableComponent))
 class PHYSX_API UPhysXDistanceJoint : public UPhysXJointBase
@@ -59,7 +53,7 @@ public:
     FColor JointColor;
 
     // Override functions
-    virtual void CreateJoint(PxPhysics* PxPhysics) override;
+    virtual void CreateJoint(physx::PxPhysics* PxPhysics) override;
     virtual void ReleaseJoint() override;
 
     // Getter functions
@@ -92,5 +86,5 @@ public:
     void SetSpringEnabled(bool v);
 
 private:
-    PxDistanceJoint* DistanceJoint;
+    physx::PxDistanceJoint* DistanceJoint;
 };

@@ -1,28 +1,15 @@
 #include "PhysXDistanceJoint.h"
-#include "PhysicsPublic.h"
-#include "PhysXPublic.h"
+#include "NvidiaPhysXIncludes.h"
+#include "PhysX.h"
+#include "PhysXTypeConversions.h"
+#include "GameFramework/Actor.h"
 
-
-#if WITH_EDITOR
-#include "UnrealEd.h"
-#include "PhysXDistanceJoint_Visualizer.h"
-#endif
+using namespace physx;
 
 
 UPhysXDistanceJoint::UPhysXDistanceJoint()
     : DistanceJoint(nullptr)
 {
-#if WITH_EDITOR
-    static bool gRegisteredVisualizer = false;
-    if (!gRegisteredVisualizer && GUnrealEd)
-    {
-        gRegisteredVisualizer = true;
-        TSharedPtr<FComponentVisualizer> visualizer = MakeShareable(new PhysXDistanceJoint_Visualizer());
-        GUnrealEd->RegisterComponentVisualizer(UPhysXDistanceJoint::StaticClass()->GetFName(), visualizer);
-        visualizer->OnRegister();
-    }
-#endif
-
     MinDistance = 0.0f;
     MaxDistance = 0.0f;
     Tolerance = 0.25f;
@@ -41,30 +28,36 @@ void UPhysXDistanceJoint::CreateJoint(PxPhysics* PxPhysics)
 {
     if (!Actor0 || !Actor1 || !PxPhysics)
     {
-        UE_LOG(LogPhysics, Warning, TEXT("Cannot create DistanceJoint: Invalid actors or PhysX SDK"));
+        UE_LOG(LogPhysXPlugin, Warning, TEXT("Cannot create DistanceJoint: Invalid actors or PhysX SDK"));
         return;
     }
 
     UPhysXRigidBody* uRigidBody0 = Actor0->FindComponentByClass<UPhysXRigidBody>();
     UPhysXRigidBody* uRigidBody1 = Actor1->FindComponentByClass<UPhysXRigidBody>();
 
+    if (!uRigidBody0 || !uRigidBody1)
+    {
+        UE_LOG(LogPhysXPlugin, Warning, TEXT("Cannot create DistanceJoint: Invalid UPhysXRigidBody actors"));
+        return;
+    }
+
     PxRigidActor* PxActor0 = uRigidBody0->GetPhysXRigidActor();
     PxRigidActor* PxActor1 = uRigidBody1->GetPhysXRigidActor();
 
     if (!PxActor0 || !PxActor1)
     {
-        UE_LOG(LogPhysics, Warning, TEXT("Cannot create DistanceJoint: Invalid PhysX actors"));
+        UE_LOG(LogPhysXPlugin, Warning, TEXT("Cannot create DistanceJoint: Invalid PhysX actors"));
         return;
     }
 
-    PxTransform PxLocalPose0 = PxTransform(PxIdentity);// uRigidBody0->MakePxTransform();
-    PxTransform PxLocalPose1 = PxTransform(PxIdentity);// uRigidBody1->MakePxTransform();
+    PxTransform PxLocalPose0 = UEPhysX::ToPxTransform(LocalPose0);
+    PxTransform PxLocalPose1 = UEPhysX::ToPxTransform(LocalPose1);
 
     DistanceJoint = PxDistanceJointCreate(*PxPhysics, PxActor0, PxLocalPose0, PxActor1, PxLocalPose1);
 
     if (!DistanceJoint)
     {
-        UE_LOG(LogPhysics, Warning, TEXT("Failed to create DistanceJoint"));
+        UE_LOG(LogPhysXPlugin, Warning, TEXT("Failed to create DistanceJoint"));
         return;
     }
 
@@ -164,18 +157,33 @@ void UPhysXDistanceJoint::SetDamping(float damping)
 
 void UPhysXDistanceJoint::SetMaxDistanceEnabled(bool value)
 {
-    physx::PxDistanceJointFlags flags = DistanceJoint->getDistanceJointFlags();
-    DistanceJoint->setDistanceJointFlags(flags | physx::PxDistanceJointFlag::Enum::eMAX_DISTANCE_ENABLED);
+    MaxDistanceEnabled = value;
+    if (DistanceJoint)
+    {
+        physx::PxDistanceJointFlags flags = DistanceJoint->getDistanceJointFlags();
+        flags = value ? (flags | physx::PxDistanceJointFlag::Enum::eMAX_DISTANCE_ENABLED) : (flags & ~physx::PxDistanceJointFlag::Enum::eMAX_DISTANCE_ENABLED);
+        DistanceJoint->setDistanceJointFlags(flags);
+    }
 }
 
 void UPhysXDistanceJoint::SetMinDistanceEnabled(bool value)
 {
-    physx::PxDistanceJointFlags flags = DistanceJoint->getDistanceJointFlags();
-    DistanceJoint->setDistanceJointFlags(flags | physx::PxDistanceJointFlag::Enum::eMIN_DISTANCE_ENABLED);
+    MinDistanceEnabled = value;
+    if (DistanceJoint)
+    {
+        physx::PxDistanceJointFlags flags = DistanceJoint->getDistanceJointFlags();
+        flags = value ? (flags | physx::PxDistanceJointFlag::Enum::eMIN_DISTANCE_ENABLED) : (flags & ~physx::PxDistanceJointFlag::Enum::eMIN_DISTANCE_ENABLED);
+        DistanceJoint->setDistanceJointFlags(flags);
+    }
 }
 
 void UPhysXDistanceJoint::SetSpringEnabled(bool value)
 {
-    physx::PxDistanceJointFlags flags = DistanceJoint->getDistanceJointFlags();
-    DistanceJoint->setDistanceJointFlags(flags | physx::PxDistanceJointFlag::Enum::eSPRING_ENABLED);
+    SpringEnabled = value;
+    if (DistanceJoint)
+    {
+        physx::PxDistanceJointFlags flags = DistanceJoint->getDistanceJointFlags();
+        flags = value ? (flags | physx::PxDistanceJointFlag::Enum::eSPRING_ENABLED) : (flags & ~physx::PxDistanceJointFlag::Enum::eSPRING_ENABLED);
+        DistanceJoint->setDistanceJointFlags(flags);
+    }
 }

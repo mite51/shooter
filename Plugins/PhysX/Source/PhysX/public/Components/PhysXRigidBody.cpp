@@ -1,12 +1,26 @@
 #include "PhysXRigidBody.h"
+#include "PhysXTypeConversions.h"
+#include "GameFramework/Actor.h"
+
+namespace
+{
+physx::PxTransform MakePxTransformFromActor(const AActor* Actor)
+{
+	return Actor ? UEPhysX::ToPxTransform(Actor->GetActorTransform()) : physx::PxTransform(physx::PxIdentity);
+}
+}
 
 UPhysXRigidBody::UPhysXRigidBody()
 {
     PrimaryComponentTick.bCanEverTick = true;
     RigidBody = nullptr;
+    StaticBody = nullptr;
 
     // Set default values
+    BodyType = EPhysXRigidBodyType::Dynamic;
     Mass = 1.0f;
+    Density = 1.0f;
+    bComputeMassFromShapes = false;
     MassSpaceInertiaTensor = FVector(1.0f, 1.0f, 1.0f);
     LinearDamping = 0.0f;
     AngularDamping = 0.0f;
@@ -14,15 +28,45 @@ UPhysXRigidBody::UPhysXRigidBody()
     MaxAngularVelocity = 100.0f;
     LinearVelocity = FVector::ZeroVector;
     AngularVelocity = FVector::ZeroVector;
+    bDisableGravity = false;
+    bStartAwake = true;
+    KINEMATIC = false;
+    USE_KINEMATIC_TARGET_FOR_SCENE_QUERIES = false;
+    ENABLE_CCD = false;
+    ENABLE_CCD_FRICTION = false;
+    ENABLE_POSE_INTEGRATION_PREVIEW = false;
+    ENABLE_SPECULATIVE_CCD = false;
+    ENABLE_CCD_MAX_CONTACT_IMPULSE = false;
+    RETAIN_ACCELERATIONS = false;
 }
 
 void UPhysXRigidBody::CreateRigidBody(physx::PxPhysics* PxPhysics)
 {
-    if (PxPhysics && !RigidBody)
+    if (PxPhysics && !RigidBody && !StaticBody)
     {
-        physx::PxTransform T = MakePxTransform();
-        RigidBody = PxPhysics->createRigidDynamic(T);
-        SyncToPhysX();
+        physx::PxTransform T = MakePxTransformFromActor(GetOwner());
+        if (BodyType == EPhysXRigidBodyType::Static)
+        {
+            StaticBody = PxPhysics->createRigidStatic(T);
+            if (StaticBody)
+            {
+                StaticBody->setActorFlag(physx::PxActorFlag::eDISABLE_GRAVITY, bDisableGravity);
+            }
+        }
+        else
+        {
+            RigidBody = PxPhysics->createRigidDynamic(T);
+            SyncToPhysX();
+        }
+    }
+}
+
+void UPhysXRigidBody::FinalizeRigidBody()
+{
+    if (RigidBody && bComputeMassFromShapes && Density > 0.0f)
+    {
+        physx::PxRigidBodyExt::updateMassAndInertia(*RigidBody, Density);
+        SyncFromPhysX();
     }
 }
 
@@ -33,60 +77,36 @@ void UPhysXRigidBody::DestroyRigidBody()
         RigidBody->release();
         RigidBody = nullptr;
     }
+
+    if (StaticBody)
+    {
+        StaticBody->release();
+        StaticBody = nullptr;
+    }
+}
+
+physx::PxRigidActor* UPhysXRigidBody::GetPhysXRigidActor() const
+{
+    return RigidBody ? static_cast<physx::PxRigidActor*>(RigidBody) : static_cast<physx::PxRigidActor*>(StaticBody);
 }
 
 void UPhysXRigidBody::SyncTransformFromPhysX()
 {
     // Update owner's transform based on RigidBody's transform
-    if (RigidBody)
+    if (physx::PxRigidActor* RigidActor = GetPhysXRigidActor())
     {
-        physx::PxTransform PxTransform = RigidBody->getGlobalPose();
-        FTransform NewTransform(FQuat(PxTransform.q.x, PxTransform.q.y, PxTransform.q.z, PxTransform.q.w),
-            FVector(PxTransform.p.x, PxTransform.p.y, PxTransform.p.z));
-        NewTransform.SetScale3D(FVector::One());//??needed?
+        const FTransform NewTransform = UEPhysX::FromPxTransform(RigidActor->getGlobalPose());
         GetOwner()->SetActorTransform(NewTransform);
     }
 }
 
-physx::PxTransform UPhysXRigidBody::MakePxTransform(FTransform transform)
-{
-    // Store the location and rotation
-    const FVector& location = transform.GetLocation();
-    const FQuat& rotation = transform.GetRotation();
-
-    // Convert Unreal's FQuat to PhysX's PxQuat
-    physx::PxQuat px_Rotation(
-        rotation.X,
-        rotation.Y,
-        rotation.Z,
-        rotation.W
-    );
-
-    // Convert Unreal's FVector to PhysX's PxVec3
-    physx::PxVec3 px_Position(
-        location.X,
-        location.Y,
-        location.Z
-    );
-
-    // Create the PhysX transform
-    return physx::PxTransform(px_Position, px_Rotation);
-}
-
-physx::PxTransform UPhysXRigidBody::MakePxTransform()
-{
-    const AActor* actor = GetOwner();
-    FTransform transform = actor->GetActorTransform();
-    return MakePxTransform(transform);
-}
-
 void UPhysXRigidBody::SyncTransformToPhysX()
 {
-    if (RigidBody)
+    if (physx::PxRigidActor* RigidActor = GetPhysXRigidActor())
     {
         // Set the global pose of the rigid body
-        physx::PxTransform T = MakePxTransform();
-        RigidBody->setGlobalPose(T);
+        physx::PxTransform T = MakePxTransformFromActor(GetOwner());
+        RigidActor->setGlobalPose(T);
     }
 }
 
@@ -100,10 +120,13 @@ void UPhysXRigidBody::SyncToPhysX()
         RigidBody->setAngularDamping(AngularDamping);
         RigidBody->setMaxLinearVelocity(MaxLinearVelocity);
         RigidBody->setMaxAngularVelocity(MaxAngularVelocity);
+        RigidBody->setActorFlag(physx::PxActorFlag::eDISABLE_GRAVITY, bDisableGravity);
 
         //PxRigidBodyFlags
         int iflags = 0;
-        iflags |= KINEMATIC * (int)physx::PxRigidBodyFlag::Enum::eKINEMATIC;
+        const bool bKinematicBody = KINEMATIC || BodyType == EPhysXRigidBodyType::Kinematic;
+        iflags |= bKinematicBody * (int)physx::PxRigidBodyFlag::Enum::eKINEMATIC;
+        iflags |= USE_KINEMATIC_TARGET_FOR_SCENE_QUERIES * (int)physx::PxRigidBodyFlag::Enum::eUSE_KINEMATIC_TARGET_FOR_SCENE_QUERIES;
         iflags |= ENABLE_CCD * (int)physx::PxRigidBodyFlag::Enum::eENABLE_CCD;
         iflags |= ENABLE_CCD_FRICTION * (int)physx::PxRigidBodyFlag::Enum::eENABLE_CCD_FRICTION;
         iflags |= ENABLE_POSE_INTEGRATION_PREVIEW * (int)physx::PxRigidBodyFlag::Enum::eENABLE_POSE_INTEGRATION_PREVIEW;
@@ -112,6 +135,9 @@ void UPhysXRigidBody::SyncToPhysX()
         iflags |= RETAIN_ACCELERATIONS * (int)physx::PxRigidBodyFlag::Enum::eRETAIN_ACCELERATIONS;
         physx::PxRigidBodyFlag::Enum flags = static_cast<physx::PxRigidBodyFlag::Enum>(iflags);
         RigidBody->setRigidBodyFlags(flags);
+
+        RigidBody->setLinearVelocity(physx::PxVec3(LinearVelocity.X, LinearVelocity.Y, LinearVelocity.Z), bStartAwake);
+        RigidBody->setAngularVelocity(physx::PxVec3(AngularVelocity.X, AngularVelocity.Y, AngularVelocity.Z), bStartAwake);
 
         //SyncTransformToPhysX();
     }
@@ -136,6 +162,8 @@ void UPhysXRigidBody::SyncFromPhysX()
         //PxRigidBodyFlags
         physx::PxRigidBodyFlags RigidBodyFlags = RigidBody->getRigidBodyFlags();
         KINEMATIC = RigidBodyFlags.isSet(static_cast<physx::PxRigidBodyFlag::Enum>(physx::PxRigidBodyFlag::Enum::eKINEMATIC));
+        BodyType = KINEMATIC ? EPhysXRigidBodyType::Kinematic : EPhysXRigidBodyType::Dynamic;
+        USE_KINEMATIC_TARGET_FOR_SCENE_QUERIES = RigidBodyFlags.isSet(static_cast<physx::PxRigidBodyFlag::Enum>(physx::PxRigidBodyFlag::Enum::eUSE_KINEMATIC_TARGET_FOR_SCENE_QUERIES));
         ENABLE_CCD = RigidBodyFlags.isSet(static_cast<physx::PxRigidBodyFlag::Enum>(physx::PxRigidBodyFlag::Enum::eENABLE_CCD));
         ENABLE_CCD_FRICTION = RigidBodyFlags.isSet(static_cast<physx::PxRigidBodyFlag::Enum>(physx::PxRigidBodyFlag::Enum::eENABLE_CCD_FRICTION));
         ENABLE_POSE_INTEGRATION_PREVIEW = RigidBodyFlags.isSet(static_cast<physx::PxRigidBodyFlag::Enum>(physx::PxRigidBodyFlag::Enum::eENABLE_POSE_INTEGRATION_PREVIEW));

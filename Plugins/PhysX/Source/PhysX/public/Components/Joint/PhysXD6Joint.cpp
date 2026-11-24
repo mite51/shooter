@@ -1,26 +1,13 @@
 #include "PhysXD6Joint.h"
-#include "PhysicsPublic.h"
-#include "PhysXPublic.h"
+#include "NvidiaPhysXIncludes.h"
+#include "PhysX.h"
+#include "PhysXTypeConversions.h"
+#include "GameFramework/Actor.h"
 
-
-#if WITH_EDITOR
-#include "UnrealEd.h"
-#include "PhysXD6Joint_Visualizer.h"
-#endif
+using namespace physx;
 
 UPhysXD6Joint::UPhysXD6Joint() : UPhysXJointBase()
 {
-#if WITH_EDITOR
-    static bool gRegisteredVisualizer = false;
-    if (!gRegisteredVisualizer && GUnrealEd)
-    {
-        gRegisteredVisualizer = true;
-        TSharedPtr<FComponentVisualizer> visualizer = MakeShareable(new PhysXD6Joint_Visualizer());
-        GUnrealEd->RegisterComponentVisualizer(UPhysXD6Joint::StaticClass()->GetFName(), visualizer);
-        visualizer->OnRegister();
-    }
-#endif
-
     MotionX = EPxD6Motion::Locked;
     MotionY = EPxD6Motion::Locked;
     MotionZ = EPxD6Motion::Locked;
@@ -51,7 +38,7 @@ void UPhysXD6Joint::CreateJoint(physx::PxPhysics* PxPhysics)
 {
     if (!Actor0 || !Actor1)
     {
-        UE_LOG(LogPhysics, Warning, TEXT("Cannot create D6Joint: Invalid actors"));
+        UE_LOG(LogPhysXPlugin, Warning, TEXT("Cannot create D6Joint: Invalid actors"));
         return;
     }
     
@@ -60,7 +47,7 @@ void UPhysXD6Joint::CreateJoint(physx::PxPhysics* PxPhysics)
 
     if (!uRigidBody0 || !uRigidBody1)
     {
-        UE_LOG(LogPhysics, Warning, TEXT("Cannot create D6Joint: Invalid UPhysXRigidBody AActors"));
+        UE_LOG(LogPhysXPlugin, Warning, TEXT("Cannot create D6Joint: Invalid UPhysXRigidBody actors"));
         return;
     }
 
@@ -69,18 +56,18 @@ void UPhysXD6Joint::CreateJoint(physx::PxPhysics* PxPhysics)
 
     if (!PxActor0 || !PxActor1)
     {
-        UE_LOG(LogPhysics, Warning, TEXT("Cannot create D6Joint: Invalid PhysX actors"));
+        UE_LOG(LogPhysXPlugin, Warning, TEXT("Cannot create D6Joint: Invalid PhysX actors"));
         return;
     }
 
-    PxTransform PxLocalPose0 = uRigidBody0->MakePxTransform();
-    PxTransform PxLocalPose1 = uRigidBody1->MakePxTransform();
+    PxTransform PxLocalPose0 = UEPhysX::ToPxTransform(LocalPose0);
+    PxTransform PxLocalPose1 = UEPhysX::ToPxTransform(LocalPose1);
 
     D6Joint = PxD6JointCreate(*PxPhysics, PxActor0, PxLocalPose0, PxActor1, PxLocalPose1);
 
     if (!D6Joint)
     {
-        UE_LOG(LogPhysics, Warning, TEXT("Failed to create D6Joint"));
+        UE_LOG(LogPhysXPlugin, Warning, TEXT("Failed to create D6Joint"));
         return;
     }
 
@@ -214,7 +201,7 @@ void UPhysXD6Joint::SetDrivePosition(const FTransform& Pose, bool bAutowake)
 {
     if (D6Joint)
     {
-        D6Joint->setDrivePosition(UPhysXRigidBody::MakePxTransform(Pose), bAutowake);
+        D6Joint->setDrivePosition(UEPhysX::ToPxTransform(Pose), bAutowake);
     }
 }
 
@@ -223,8 +210,8 @@ void UPhysXD6Joint::SetDriveVelocity(const FVector& Linear, const FVector& Angul
     if (D6Joint)
     {
         PxVec3 linear(Linear.X, Linear.Y, Linear.Z);
-        PxVec3 angluar(Angular.X, Angular.Y, Angular.Z);
-        D6Joint->setDriveVelocity(angluar, angluar, bAutowake);
+        PxVec3 angular(Angular.X, Angular.Y, Angular.Z);
+        D6Joint->setDriveVelocity(linear, angular, bAutowake);
     }
 }
 

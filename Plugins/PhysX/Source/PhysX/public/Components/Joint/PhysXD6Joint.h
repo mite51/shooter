@@ -3,7 +3,10 @@
 #include "PhysXJointBase.h"
 #include "PhysXD6Joint.generated.h"
 
-using namespace physx;
+namespace physx
+{
+    class PxD6Joint;
+}
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class PHYSX_API UPhysXD6Joint : public UPhysXJointBase
@@ -134,5 +137,5 @@ public:
     FColor DriveColor;
 
 private:
-    PxD6Joint* D6Joint;
+    physx::PxD6Joint* D6Joint;
 };

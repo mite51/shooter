@@ -1,15 +1,8 @@
 #include "TriangleMeshPhysXCollider.h"
-#include "PhysXPublic.h"
 
-// Temporarily undefine Unreal's check macro to avoid conflicts with PhysX
-#pragma push_macro("check")
-#undef check
-
-#include "PxPhysicsAPI.h"
+#include "NvidiaPhysXIncludes.h"
+#include "StaticMeshGeometryExtraction.h"
 #include "cooking/PxCooking.h"
-
-// Restore Unreal's check macro
-#pragma pop_macro("check")
 
 UTriangleMeshPhysXCollider::UTriangleMeshPhysXCollider()
 {
@@ -31,31 +24,22 @@ physx::PxGeometry* UTriangleMeshPhysXCollider::CreateGeometry(physx::PxPhysics* 
 
 physx::PxTriangleMesh* UTriangleMeshPhysXCollider::CreatePxTriangleMesh(physx::PxPhysics* PxPhysics)
 {
-    if (!TriangleMesh || !TriangleMesh->GetRenderData() || TriangleMesh->GetRenderData()->LODResources.Num() == 0)
+    TArray<FVector3f> MeshVertices;
+    TArray<uint32> Indices;
+    if (!UEPhysX::ExtractStaticMeshLOD0(TriangleMesh, MeshVertices, Indices) || Indices.Num() < 3)
+    {
         return nullptr;
-
-    const FStaticMeshLODResources& LODResource = TriangleMesh->GetRenderData()->LODResources[0];
-    const int32 NumVerts = LODResource.VertexBuffers.PositionVertexBuffer.GetNumVertices();
-    const int32 NumTriangles = LODResource.IndexBuffer.GetNumIndices() / 3;
+    }
 
     TArray<physx::PxVec3> Vertices;
-    Vertices.Reserve(NumVerts);
+    Vertices.Reserve(MeshVertices.Num());
 
-    for (int32 VertIdx = 0; VertIdx < NumVerts; VertIdx++)
+    for (const FVector3f& Position : MeshVertices)
     {
-        const FVector3f& Position = LODResource.VertexBuffers.PositionVertexBuffer.VertexPosition(VertIdx);
         Vertices.Add(physx::PxVec3(Position.X, Position.Y, Position.Z));
     }
 
-    TArray<uint32> Indices;
-    Indices.Reserve(NumTriangles * 3);
-
-    for (int32 TriIdx = 0; TriIdx < NumTriangles; TriIdx++)
-    {
-        Indices.Add(LODResource.IndexBuffer.GetIndex(TriIdx * 3 + 0));
-        Indices.Add(LODResource.IndexBuffer.GetIndex(TriIdx * 3 + 1));
-        Indices.Add(LODResource.IndexBuffer.GetIndex(TriIdx * 3 + 2));
-    }
+    const int32 NumTriangles = Indices.Num() / 3;
 
     physx::PxTriangleMeshDesc TriMeshDesc;
     TriMeshDesc.points.count = Vertices.Num();

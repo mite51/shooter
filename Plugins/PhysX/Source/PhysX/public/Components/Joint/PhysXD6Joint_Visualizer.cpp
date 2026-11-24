@@ -1,6 +1,7 @@
 #include "PhysXD6Joint_Visualizer.h"
 #include "CoreMinimal.h"
 #include "MathUtil.h"
+#include "SceneManagement.h"
 
 void PhysXD6Joint_Visualizer::DrawVisualization(const UActorComponent* Component, const FSceneView* View, FPrimitiveDrawInterface* PDI)
 {

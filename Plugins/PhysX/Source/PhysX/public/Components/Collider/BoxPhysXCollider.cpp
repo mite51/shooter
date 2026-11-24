@@ -1,5 +1,6 @@
 
 #include "BoxPhysXCollider.h"
+#include "NvidiaPhysXIncludes.h"
 
 UBoxPhysXCollider::UBoxPhysXCollider()
 {

@@ -1,9 +1,13 @@
 #pragma once
 
-#include "PxPhysicsAPI.h"
 #include "CoreMinimal.h"
 #include "BasePhysXCollider.h"
 #include "TriangleMeshPhysXCollider.generated.h"
+
+namespace physx
+{
+    class PxTriangleMesh;
+}
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class PHYSX_API UTriangleMeshPhysXCollider : public UBasePhysXCollider
@@ -13,7 +17,7 @@ class PHYSX_API UTriangleMeshPhysXCollider : public UBasePhysXCollider
 public:
     UTriangleMeshPhysXCollider();
 
-    UPROPERTY(EditAnywhere, Category = "Collider", meta=(UseComponentPicker, AllowedClasses = "StaticMeshComponent"))
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Collider")
     class UStaticMesh* TriangleMesh;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Collider")

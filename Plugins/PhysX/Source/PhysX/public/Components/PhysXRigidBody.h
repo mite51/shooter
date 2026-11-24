@@ -3,22 +3,25 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 
-// Temporarily undefine Unreal's check macro to avoid conflicts with PhysX
-#pragma push_macro("check")
-#undef check
-
-#include <PxPhysicsAPI.h>
-#include "PhysXPublic.h"
-#include "PxRigidBody.h"
-
-// Restore Unreal's check macro
-#pragma pop_macro("check")
-
 #include "PhysXRigidBody.generated.h"
 
-using namespace physx;
+namespace physx
+{
+	class PxPhysics;
+	class PxRigidActor;
+	class PxRigidDynamic;
+	class PxRigidStatic;
+}
 
-UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+UENUM(BlueprintType)
+enum class EPhysXRigidBodyType : uint8
+{
+    Static UMETA(DisplayName = "Static"),
+    Dynamic UMETA(DisplayName = "Dynamic"),
+    Kinematic UMETA(DisplayName = "Kinematic")
+};
+
+UCLASS(ClassGroup = (PhysX), meta = (BlueprintSpawnableComponent))
 class PHYSX_API UPhysXRigidBody : public UActorComponent
 {
     GENERATED_BODY()
@@ -29,7 +32,16 @@ public:
     UPhysXRigidBody();
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|RigidBody")
+    EPhysXRigidBodyType BodyType;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|RigidBody")
     float Mass;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|RigidBody", meta = (ClampMin = "0.0"))
+    float Density;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|RigidBody")
+    bool bComputeMassFromShapes;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|RigidBody")
     FVector MassSpaceInertiaTensor;
@@ -52,6 +64,12 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|RigidBody")
     FVector AngularVelocity;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|RigidBody")
+    bool bDisableGravity;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|RigidBody")
+    bool bStartAwake;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|RigidBody", meta = (DisplayName = "Kinematic"))
     bool KINEMATIC;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|RigidBody", meta = (DisplayName = "Use Kinematic Target for Scene Queries"))
@@ -70,11 +88,10 @@ public:
     bool RETAIN_ACCELERATIONS;
 
     void CreateRigidBody(physx::PxPhysics* PxPhysics);
+    void FinalizeRigidBody();
     void DestroyRigidBody();
-    PxRigidActor* GetPhysXRigidActor() const { return RigidBody; }
-
-    PxTransform MakePxTransform();
-    static PxTransform MakePxTransform(FTransform T);
+    physx::PxRigidActor* GetPhysXRigidActor() const;
+    physx::PxRigidDynamic* GetPhysXRigidDynamic() const { return RigidBody; }
 
     UFUNCTION(BlueprintCallable, Category = "PhysX|RigidBody")
     void SyncTransformFromPhysX();
@@ -89,7 +106,8 @@ public:
     void AddTorque(const FVector& Torque, bool bAutoWake = true);
 
 private:
-    PxRigidDynamic* RigidBody;
+    physx::PxRigidDynamic* RigidBody;
+    physx::PxRigidStatic* StaticBody;
 
     void SyncToPhysX();
     void SyncFromPhysX();

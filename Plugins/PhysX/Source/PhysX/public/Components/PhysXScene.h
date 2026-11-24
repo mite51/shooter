@@ -3,17 +3,21 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 
-// Temporarily undefine Unreal's check macro to avoid conflicts with PhysX
-#pragma push_macro("check")
-#undef check
-
-#include "PxPhysicsAPI.h"
-#include "PhysXPublic.h"
-
-// Restore Unreal's check macro
-#pragma pop_macro("check")
-
 #include "PhysXScene.generated.h"
+
+class UPhysXPvdComponent;
+namespace physx
+{
+	class PxDefaultCpuDispatcher;
+	class PxFoundation;
+	class PxMaterial;
+	class PxPhysics;
+	class PxPvd;
+	class PxPvdTransport;
+	class PxRigidActor;
+	class PxScene;
+	class PxSceneDesc;
+}
 
 // Enum definitions (place these outside the class definition)
 UENUM(BlueprintType)
@@ -39,7 +43,7 @@ enum class EPxSolverType : uint8
     eTGS UMETA(DisplayName = "Temporal Gauss-Seidel")
 };
 
-UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+UCLASS(ClassGroup = (PhysX), meta = (BlueprintSpawnableComponent))
 class PHYSX_API UPhysXScene : public UActorComponent
 {
     GENERATED_BODY()
@@ -57,24 +61,42 @@ public:
     UFUNCTION(BlueprintCallable, Category = "PhysX")
     void StepPhysXSimulation(float DeltaTime);
 
+    physx::PxFoundation* GetPxFoundation() const { return mFoundation; }
+    physx::PxPhysics* GetPxPhysics() const { return mPhysics; }
+    physx::PxScene* GetPxScene() const { return mScene; }
+    physx::PxMaterial* GetDefaultMaterial() const { return mDefaultMaterial; }
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX Scene Flags")
+    UFUNCTION(BlueprintCallable, Category = "PhysX")
+    bool IsSimulationInitialized() const { return mScene != nullptr; }
+
+    static UPhysXScene* FindPhysXScene(const UObject* WorldContextObject);
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|PVD")
+    bool bEnablePvd;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|PVD", meta = (DisplayName = "PVD Host"))
     FString PVD_HOST_IP = "127.0.0.1";
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX Scene Flags")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|PVD", meta = (ClampMin = "1", ClampMax = "65535"))
+    int32 PvdPort;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|PVD", meta = (ClampMin = "0"))
+    int32 PvdTimeoutMilliseconds;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|Scene")
     bool bAutoStepSimulation = true;
 
     // PxSceneFlag options
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX Scene Flags")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|Scene Flags")
     bool bEnableActiveActors;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX Scene Flags")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|Scene Flags")
     bool bEnableCCD;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX Scene Flags")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|Scene Flags")
     bool bDisableCCDResweep;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX Scene Flags")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|Scene Flags")
     bool bEnablePCM;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX Scene Flags")
@@ -181,25 +203,27 @@ public:
     physx::PxSceneDesc CreateSceneDesc(physx::PxPhysics* Physics);
 
 private:
+    bool InitializePhysXRuntime(UPhysXPvdComponent* PvdSettings);
+    bool StepPhysXRuntime(float DeltaTime);
+    void ShutdownPhysXRuntime();
+    physx::PxRigidActor* CreateStaticRigidActor(const FTransform& Transform) const;
+    void AddRigidActorToScene(physx::PxRigidActor* RigidActor) const;
     void SyncPhysXTransforms();
+    UPhysXPvdComponent* ResolvePvdSettings() const;
+    void ConfigurePvdSceneClient(UPhysXPvdComponent* PvdSettings) const;
+    void ReleasePvd();
 
 private:
     TArray<AActor*> PhysXActors;
-    
-    // Helper function to convert enum values to shift amounts
-    static int FlagToShift(physx::PxSceneFlag::Enum flag);
-
-    // Helper functions to convert UE4 enums to PhysX enums
-    static physx::PxBroadPhaseType::Enum ToPxBroadPhaseType(EPxBroadPhaseType Type);
-    static physx::PxFrictionType::Enum ToPxFrictionType(EPxFrictionType Type);
-    static physx::PxSolverType::Enum ToPxSolverType(EPxSolverType Type);
 
     physx::PxFoundation* mFoundation = nullptr;
     physx::PxPhysics* mPhysics = nullptr;
     physx::PxScene* mScene = nullptr;
     //physx::PxArray<PxConstraint*>* gConstraints;
     physx::PxPvd* mPvd = nullptr;
+    physx::PxPvdTransport* mPvdTransport = nullptr;
     physx::PxDefaultCpuDispatcher* mDispatcher = nullptr;
+    physx::PxMaterial* mDefaultMaterial = nullptr;
 
 };
 

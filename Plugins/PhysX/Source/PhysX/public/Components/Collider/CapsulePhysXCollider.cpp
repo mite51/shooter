@@ -1,4 +1,5 @@
 #include "CapsulePhysXCollider.h"
+#include "NvidiaPhysXIncludes.h"
 
 UCapsulePhysXCollider::UCapsulePhysXCollider()
 {

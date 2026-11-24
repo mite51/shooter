@@ -1,20 +1,20 @@
 #pragma once
 
-#include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-
-// Temporarily undefine Unreal's check macro to avoid conflicts with PhysX
-#pragma push_macro("check")
-#undef check
-
-#include "PxPhysicsAPI.h"
-
-// Restore Unreal's check macro
-#pragma pop_macro("check")
 
 #include "BasePhysXCollider.generated.h"
 
-UCLASS(Abstract, ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+class UPhysXMaterial;
+namespace physx
+{
+	class PxGeometry;
+	class PxMaterial;
+	class PxPhysics;
+	class PxRigidActor;
+	class PxShape;
+}
+
+UCLASS(Abstract, ClassGroup = (PhysX), meta = (BlueprintSpawnableComponent))
 class PHYSX_API UBasePhysXCollider : public UActorComponent
 {
     GENERATED_BODY()
@@ -24,15 +24,20 @@ class PHYSX_API UBasePhysXCollider : public UActorComponent
 public:
     UBasePhysXCollider();
 
-    virtual void InitializeCollider(physx::PxPhysics* PxPhysics, physx::PxRigidActor* RigidActor);
+    virtual void InitializeCollider(physx::PxPhysics* PxPhysics, physx::PxRigidActor* RigidActor, physx::PxMaterial* DefaultMaterial = nullptr);
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Collider")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|Collider")
     FVector LocalPosition;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Collider")
-    FQuat LocalRotation = FQuat::Identity;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|Collider")
+    FQuat LocalRotation;
 
-    virtual physx::PxTransform MakePhysXTransform();
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|Collider")
+    UPhysXMaterial* Material;
+
+    virtual FTransform MakePhysXTransform();
+
+    physx::PxShape* GetColliderShape() const { return ColliderShape; }
 
 protected:
     virtual void BeginPlay() override;
@@ -40,11 +45,13 @@ protected:
 
     physx::PxShape* ColliderShape;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Collider")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|Collider")
     float ContactOffset;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Collider")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PhysX|Collider")
     float RestOffset;
 
     virtual physx::PxGeometry* CreateGeometry(physx::PxPhysics* PxPhysics) PURE_VIRTUAL(UBasePhysXCollider::CreateGeometry, return nullptr;);
+
+    physx::PxMaterial* ResolveMaterial(physx::PxPhysics* PxPhysics, physx::PxMaterial* DefaultMaterial, physx::PxMaterial*& OutTransientMaterial) const;
 };

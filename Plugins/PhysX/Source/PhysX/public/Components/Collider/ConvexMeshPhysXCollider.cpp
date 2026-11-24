@@ -1,16 +1,8 @@
 #include "ConvexMeshPhysXCollider.h"
-#include "PhysXPublic.h"
 
-// Temporarily undefine Unreal's check macro to avoid conflicts with PhysX
-#pragma push_macro("check")
-#undef check
-
+#include "NvidiaPhysXIncludes.h"
+#include "StaticMeshGeometryExtraction.h"
 #include "cooking/PxCooking.h"
-
-// Restore Unreal's check macro
-#pragma pop_macro("check")
-
-#include "Engine/StaticMesh.h"
 
 UConvexMeshPhysXCollider::UConvexMeshPhysXCollider()
 {
@@ -32,18 +24,18 @@ physx::PxGeometry* UConvexMeshPhysXCollider::CreateGeometry(physx::PxPhysics* Px
 
 physx::PxConvexMesh* UConvexMeshPhysXCollider::CreatePxConvexMesh(physx::PxPhysics* PxPhysics)
 {
-    if (!ConvexMesh || !ConvexMesh->GetRenderData() || ConvexMesh->GetRenderData()->LODResources.Num() == 0)
+    TArray<FVector3f> MeshVertices;
+    TArray<uint32> IgnoredIndices;
+    if (!UEPhysX::ExtractStaticMeshLOD0(ConvexMesh, MeshVertices, IgnoredIndices))
+    {
         return nullptr;
-
-    const FStaticMeshLODResources& LODResource = ConvexMesh->GetRenderData()->LODResources[0];
-    const int32 NumVerts = LODResource.VertexBuffers.PositionVertexBuffer.GetNumVertices();
+    }
 
     TArray<physx::PxVec3> Vertices;
-    Vertices.Reserve(NumVerts);
+    Vertices.Reserve(MeshVertices.Num());
 
-    for (int32 VertIdx = 0; VertIdx < NumVerts; VertIdx++)
+    for (const FVector3f& Position : MeshVertices)
     {
-        const FVector3f& Position = LODResource.VertexBuffers.PositionVertexBuffer.VertexPosition(VertIdx);
         Vertices.Add(physx::PxVec3(Position.X, Position.Y, Position.Z));
     }
 

@@ -4,4 +4,6 @@
 #include "PhysX.h"
 #include "Modules/ModuleManager.h"
 
-IMPLEMENT_MODULE(FDefaultGameModuleImpl, PhysX);
+DEFINE_LOG_CATEGORY(LogPhysXPlugin);
+
+IMPLEMENT_MODULE(FDefaultModuleImpl, PhysX);

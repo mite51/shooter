@@ -4,6 +4,11 @@
 #include "BasePhysXCollider.h"
 #include "ConvexMeshPhysXCollider.generated.h"
 
+namespace physx
+{
+    class PxConvexMesh;
+}
+
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class PHYSX_API UConvexMeshPhysXCollider : public UBasePhysXCollider
 {

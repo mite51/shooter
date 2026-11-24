@@ -5,6 +5,11 @@
 //#include "LandscapeComponent.h"
 #include "HeightFieldPhysXCollider.generated.h"
 
+namespace physx
+{
+    class PxHeightField;
+}
+
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class PHYSX_API UHeightFieldPhysXCollider : public UBasePhysXCollider
 {
@@ -13,7 +18,7 @@ class PHYSX_API UHeightFieldPhysXCollider : public UBasePhysXCollider
 public:
     UHeightFieldPhysXCollider();
 
-    UPROPERTY(EditAnywhere, Category = "Collider", meta = (UseComponentPicker, AllowedClasses = "LandscapeComponent"))
+    UPROPERTY(EditAnywhere, Category = "Collider", meta = (UseComponentPicker, AllowedClasses = "/Script/Landscape.LandscapeComponent"))
     class ULandscapeComponent* LandscapeComponent;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Collider")
